@@ -22,9 +22,9 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     // This dependency is used by the application.
-    implementation(libs.guava)
-    implementation 'org.lwjgl:lwjgl:3.3.0'
-    implementation 'net.java.dev.jna:jna:5.10.0'
+    implementation(libs.guava);
+    implementation("org.lwjgl:lwjgl:3.3.0")
+    implementation("net.java.dev.jna:jna:5.10.0")
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
