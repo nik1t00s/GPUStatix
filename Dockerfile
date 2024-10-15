@@ -6,5 +6,4 @@ COPY . .
 
 RUN ./gradlew build
 
-CMD ["java", "-jar", "build/libs/Main.jar"]
-
+CMD ["java", "-jar", "build/libs/app.jar"]
