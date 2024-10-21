@@ -23,6 +23,7 @@ dependencies {
     implementation(kotlin("stdlib"))
     implementation("net.java.dev.jna:jna:5.10.0")
     implementation("com.github.oshi:oshi-core:6.4.2")
+    implementation("net.java.dev.jna:jna:5.10.0")
 }
 
 application {
