@@ -11,24 +11,55 @@ import oshi.hardware.HardwareAbstractionLayer;
 public class SysInfo {
 
     public static void displaySystemInfo() {
-        SystemInfo si = new SystemInfo();
+        Processor cpu = new Processor();
+        HardwareAbstractionLayer hal = SysHardware.getHal();
 
-        HardwareAbstractionLayer hal = si.getHardware();
-        CentralProcessor cpu = hal.getProcessor();
+        System.out.println("\n" + cpu.getName());
+    }
+}
 
-        System.out.println("CPU: " + cpu);
+abstract class SysHardware {
 
-        List<GraphicsCard> graphcisCards = hal.getGraphicsCards();
+    static SystemInfo si = new SystemInfo();
+    static HardwareAbstractionLayer hal = si.getHardware();
 
-        int graphicsCardNumber = 1;
-        for (GraphicsCard graphicsCard : graphcisCards) {
-            System.out.println(
-                "Graphics Card " +
-                graphicsCardNumber +
-                ":\n" +
-                graphicsCard.getName()
-            );
-            graphicsCardNumber++;
-        }
+    public static HardwareAbstractionLayer getHal() {
+        return hal;
+    }
+}
+
+class Processor extends SysHardware {
+
+    CentralProcessor cpu;
+
+    public Processor() {
+        this.cpu = hal.getProcessor();
+    }
+
+    public String getName() {
+        String result = "";
+        String[] allStrings = cpu.toString().split("\n");
+        result += allStrings[0];
+        return result;
+    }
+
+    public long[] getFreq() {
+        return cpu.getCurrentFreq();
+    }
+
+    public List<CentralProcessor.LogicalProcessor> getCores() {
+        return cpu.getLogicalProcessors();
+    }
+
+    public int countCores() {
+        return cpu.getLogicalProcessorCount();
+    }
+
+    public List<CentralProcessor.ProcessorCache> getCache() {
+        return cpu.getProcessorCaches();
+    }
+
+    public double[] getLoad() {
+        return cpu.getProcessorCpuLoad(0);
     }
 }
