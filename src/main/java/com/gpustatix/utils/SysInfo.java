@@ -13,8 +13,10 @@ public class SysInfo {
     public static void displaySystemInfo() {
         Processor cpu = new Processor();
         HardwareAbstractionLayer hal = SysHardware.getHal();
-
+        List<GraphicsCard> graphicCards = hal.getGraphicsCards();
+        VideoCard gpu = new VideoCard(graphicCards.get(0));
         System.out.println("\n" + cpu.getName());
+        System.out.println("\n" + gpu.getName());
     }
 }
 
@@ -61,5 +63,39 @@ class Processor extends SysHardware {
 
     public double[] getLoad() {
         return cpu.getProcessorCpuLoad(0);
+    }
+}
+
+class VideoCard implements GraphicsCard {
+
+    private final GraphicsCard videoCard;
+
+    public VideoCard(GraphicsCard videoCard) {
+        this.videoCard = videoCard;
+    }
+
+    @Override
+    public String getDeviceId() {
+        return videoCard.getDeviceId();
+    }
+
+    @Override
+    public String getName() {
+        return videoCard.getName();
+    }
+
+    @Override
+    public String getVendor() {
+        return videoCard.getVendor();
+    }
+
+    @Override
+    public long getVRam() {
+        return videoCard.getVRam();
+    }
+
+    @Override
+    public String getVersionInfo() {
+        return videoCard.getVersionInfo();
     }
 }
