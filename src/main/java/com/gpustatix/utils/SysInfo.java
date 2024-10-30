@@ -1,12 +1,11 @@
 package com.gpustatix.utils;
 
-import com.sun.jna.Pointer;
-import com.sun.jna.ptr.IntByReference;
 import java.util.List;
 import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
 import oshi.hardware.GraphicsCard;
 import oshi.hardware.HardwareAbstractionLayer;
+import oshi.hardware.Sensors;
 
 public class SysInfo {
 
@@ -15,7 +14,7 @@ public class SysInfo {
         HardwareAbstractionLayer hal = SysHardware.getHal();
         List<GraphicsCard> graphicCards = hal.getGraphicsCards();
         VideoCard gpu = new VideoCard(graphicCards.get(0));
-        System.out.println("\n" + cpu.getName());
+        System.out.println("\n" + cpu);
         System.out.println("\n" + gpu.getName());
     }
 }
@@ -24,6 +23,7 @@ abstract class SysHardware {
 
     static SystemInfo si = new SystemInfo();
     static HardwareAbstractionLayer hal = si.getHardware();
+    static Sensors sensor = hal.getSensors();
 
     public static HardwareAbstractionLayer getHal() {
         return hal;
@@ -45,8 +45,20 @@ class Processor extends SysHardware {
         return result;
     }
 
-    public long[] getFreq() {
-        return cpu.getCurrentFreq();
+    @Override
+    public String toString() {
+        return getName() +
+                "   " + getLoad() +
+                "   " + getFreq() +
+                "   " + getTemp();
+    }
+
+    public String getTemp(){
+        return Math.round(sensor.getCpuTemperature()) + " C";
+    }
+
+    public String getFreq() {
+        return Math.round((float) cpu.getCurrentFreq()[cpu.getCurrentFreq().length - 1] / (10*10*10*10*10*10)) + "MHz";
     }
 
     public List<CentralProcessor.LogicalProcessor> getCores() {
@@ -61,8 +73,8 @@ class Processor extends SysHardware {
         return cpu.getProcessorCaches();
     }
 
-    public double[] getLoad() {
-        return cpu.getProcessorCpuLoad(0);
+    public String getLoad() {
+        return Math.round(cpu.getProcessorCpuLoad(1000)[0]*100) + " %";
     }
 }
 

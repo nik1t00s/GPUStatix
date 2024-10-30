@@ -5,6 +5,8 @@ import com.gpustatix.utils.SysInfo;
 public class Main {
 
     public static void main(String[] args) {
-        SysInfo.displaySystemInfo();
+        for (int i = 0; i < 10; i++){
+            SysInfo.displaySystemInfo();
+        }
     }
 }
