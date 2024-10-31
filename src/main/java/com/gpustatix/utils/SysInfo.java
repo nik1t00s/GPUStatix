@@ -1,5 +1,6 @@
 package com.gpustatix.utils;
 
+import java.util.Arrays;
 import java.util.List;
 
 import oshi.SystemInfo;
@@ -14,9 +15,10 @@ public class SysInfo {
         Processor cpu = new Processor();
         HardwareAbstractionLayer hal = SysHardware.getHal();
         List<GraphicsCard> graphicCards = hal.getGraphicsCards();
-        VideoCard gpu = new VideoCard(graphicCards.get(0));
+        GraphicsCard gpu = graphicCards.get(0);
+        String[] VendorGPU = (gpu.getName().split(" "));
         System.out.println("\n" + cpu);
-        System.out.println("\n" + gpu);
+        System.out.println("\n" + gpu.getName());
     }
 }
 
@@ -73,46 +75,5 @@ class Processor extends SysHardware {
 
     public String getLoad() {
         return Math.round(cpu.getProcessorCpuLoad(1000)[0]*100) + " %";
-    }
-}
-
-class VideoCard implements GraphicsCard{
-
-    private final GraphicsCard videoCard;
-
-    public VideoCard(GraphicsCard videoCard) {
-        this.videoCard = videoCard;
-    }
-
-    public String toString() {
-        return getName() +
-                "   " + getVersionInfo() +
-                "  " + getVRam() +
-                "   " + getVendor();
-    }
-
-    @Override
-    public String getName() {
-        return videoCard.getName();
-    }
-
-    @Override
-    public String getDeviceId() {
-        return videoCard.getDeviceId();
-    }
-
-    @Override
-    public String getVendor() {
-        return videoCard.getVendor();
-    }
-
-    @Override
-    public String getVersionInfo() {
-        return videoCard.getVersionInfo();
-    }
-
-    @Override
-    public long getVRam() {
-        return videoCard.getVRam();
     }
 }
