@@ -1,6 +1,7 @@
 package com.gpustatix.utils;
 
 import java.util.List;
+
 import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
 import oshi.hardware.GraphicsCard;
@@ -15,7 +16,7 @@ public class SysInfo {
         List<GraphicsCard> graphicCards = hal.getGraphicsCards();
         VideoCard gpu = new VideoCard(graphicCards.get(0));
         System.out.println("\n" + cpu);
-        System.out.println("\n" + gpu.getName());
+        System.out.println("\n" + gpu);
     }
 }
 
@@ -39,10 +40,7 @@ class Processor extends SysHardware {
     }
 
     public String getName() {
-        String result = "";
-        String[] allStrings = cpu.toString().split("\n");
-        result += allStrings[0];
-        return result;
+        return cpu.getProcessorIdentifier().getName().split(" CPU ")[0];
     }
 
     @Override
@@ -78,7 +76,7 @@ class Processor extends SysHardware {
     }
 }
 
-class VideoCard implements GraphicsCard {
+class VideoCard implements GraphicsCard{
 
     private final GraphicsCard videoCard;
 
@@ -86,9 +84,11 @@ class VideoCard implements GraphicsCard {
         this.videoCard = videoCard;
     }
 
-    @Override
-    public String getDeviceId() {
-        return videoCard.getDeviceId();
+    public String toString() {
+        return getName() +
+                "   " + getVersionInfo() +
+                "  " + getVRam() +
+                "   " + getVendor();
     }
 
     @Override
@@ -97,17 +97,22 @@ class VideoCard implements GraphicsCard {
     }
 
     @Override
+    public String getDeviceId() {
+        return videoCard.getDeviceId();
+    }
+
+    @Override
     public String getVendor() {
         return videoCard.getVendor();
     }
 
     @Override
-    public long getVRam() {
-        return videoCard.getVRam();
+    public String getVersionInfo() {
+        return videoCard.getVersionInfo();
     }
 
     @Override
-    public String getVersionInfo() {
-        return videoCard.getVersionInfo();
+    public long getVRam() {
+        return videoCard.getVRam();
     }
 }

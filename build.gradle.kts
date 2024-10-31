@@ -10,6 +10,7 @@ repositories {
     mavenLocal()
     maven("https://mvnrepository.com/")
     maven("https://github.com/")
+    maven("https://jitpack.io")
     gradlePluginPortal()
 }
 
