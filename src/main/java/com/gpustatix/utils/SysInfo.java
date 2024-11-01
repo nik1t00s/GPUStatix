@@ -2,6 +2,12 @@ package com.gpustatix.utils;
 
 import java.util.List;
 
+import javafx.application.Application;
+import javafx.scene.Scene;
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
+import javafx.stage.Stage;
 import oshi.SystemInfo;
 import oshi.hardware.*;
 
@@ -17,6 +23,7 @@ public class SysInfo {
         System.out.println("\n" + cpu);
         System.out.println("\n" + gpu.getName());
         System.out.println("\n" + ram);
+        GraphicsApp.launchGraphics();
     }
 }
 
@@ -90,5 +97,47 @@ class RAM extends SysHardware{
     }
 }
 
-class GraphicsApp{
+class GraphicsApp extends Application {
+    @Override
+    public void start(Stage stage) {
+        // Создание осей для графика
+        NumberAxis xAxis = new NumberAxis();
+        NumberAxis yAxis = new NumberAxis();
+        xAxis.setLabel("Time");
+        yAxis.setLabel("Value");
+
+        // Создание линейного графика
+        LineChart<Number, Number> lineChart = new LineChart<>(xAxis, yAxis);
+        lineChart.setTitle("Framerate and Frametime Over Time");
+
+        // Серия данных для framerate
+        XYChart.Series<Number, Number> framerateSeries = new XYChart.Series<>();
+        framerateSeries.setName("Framerate");
+
+        // Серия данных для frametime
+        XYChart.Series<Number, Number> frametimeSeries = new XYChart.Series<>();
+        frametimeSeries.setName("Frametime");
+
+        // Добавление данных в серии
+        for (int time = 0; time < 100; time++) {
+            double frameRate = 60 + Math.random() * 10;
+            double frameTime = 16 + Math.random();
+
+            framerateSeries.getData().add(new XYChart.Data<>(time, frameRate));
+            frametimeSeries.getData().add(new XYChart.Data<>(time, frameTime));
+        }
+
+        // Добавление серий на график
+        lineChart.getData().addAll(framerateSeries, frametimeSeries);
+
+        // Создание сцены и добавление графика
+        Scene scene = new Scene(lineChart, 800, 600);
+        stage.setScene(scene);
+        stage.setTitle("Performance Metrics");
+        stage.show();
+    }
+
+    public static void launchGraphics() {
+        launch();
+    }
 }

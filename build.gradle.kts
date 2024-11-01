@@ -1,6 +1,7 @@
 plugins {
     id("java")
     id("application")
+    id("org.openjfx.javafxplugin") version "0.0.13"
     kotlin("jvm") version "1.8.10"
 }
 
@@ -30,6 +31,10 @@ dependencies {
 
 application {
     mainClass.set("com.gpustatix.Main")
+    applicationDefaultJvmArgs = listOf(
+        "--module-path", "/Users/jabka125/Downloads/javafx-sdk-23/lib",
+        "--add-modules", "javafx.controls,javafx.fxml,javafx.graphics,javafx.base"
+    )
 }
 
 tasks.jar {
@@ -42,7 +47,7 @@ tasks.jar {
 
 tasks.withType<JavaExec> {
     jvmArgs = listOf(
-        "--module-path", "/Users/jabka125/Downloads/javafx-sdk-23/lib", // Замените на путь к JavaFX SDK
+        "--module-path", "/Users/jabka125/Downloads/javafx-sdk-23/lib",
         "--add-modules", "javafx.controls,javafx.fxml"
     )
 }
@@ -51,4 +56,9 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     kotlinOptions {
         jvmTarget = "17"
     }
+}
+
+javafx {
+    version = "23"
+    modules = listOf("javafx.controls", "javafx.fxml", "javafx.graphics", "javafx.base")
 }
