@@ -1,24 +1,22 @@
 package com.gpustatix.utils;
 
-import java.util.Arrays;
 import java.util.List;
 
 import oshi.SystemInfo;
-import oshi.hardware.CentralProcessor;
-import oshi.hardware.GraphicsCard;
-import oshi.hardware.HardwareAbstractionLayer;
-import oshi.hardware.Sensors;
+import oshi.hardware.*;
 
 public class SysInfo {
 
     public static void displaySystemInfo() {
         Processor cpu = new Processor();
+        RAM ram = new RAM();
         HardwareAbstractionLayer hal = SysHardware.getHal();
         List<GraphicsCard> graphicCards = hal.getGraphicsCards();
         GraphicsCard gpu = graphicCards.get(0);
         String[] VendorGPU = (gpu.getName().split(" "));
         System.out.println("\n" + cpu);
         System.out.println("\n" + gpu.getName());
+        System.out.println("\n" + ram);
     }
 }
 
@@ -76,4 +74,21 @@ class Processor extends SysHardware {
     public String getLoad() {
         return Math.round(cpu.getProcessorCpuLoad(1000)[0]*100) + " %";
     }
+}
+
+class RAM extends SysHardware{
+    GlobalMemory RAM;
+    public RAM(){
+        this.RAM = hal.getMemory();
+    }
+
+    @Override
+    public String toString() {
+        return "Total " + (RAM.getTotal() / 1000000) +
+                " MB" + "   " +
+                "Using " + ((RAM.getTotal() / 1000000) - RAM.getAvailable() / 1000000) + " MB";
+    }
+}
+
+class Graphics {
 }
