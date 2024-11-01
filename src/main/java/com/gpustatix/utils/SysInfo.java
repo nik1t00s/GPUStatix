@@ -90,5 +90,5 @@ class RAM extends SysHardware{
     }
 }
 
-class Graphics {
+class GraphicsApp{
 }

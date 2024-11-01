@@ -16,10 +16,10 @@ repositories {
 
 dependencies {
     implementation("org.lwjgl:lwjgl:3.3.0")
-    implementation("org.openjfx:javafx-graphics:20")
-    implementation("org.openjfx:javafx-base:20")
-    implementation("org.openjfx:javafx-controls:19")
-    implementation("org.openjfx:javafx-fxml:19")
+    implementation("org.openjfx:javafx-graphics:23")
+    implementation("org.openjfx:javafx-base:23")
+    implementation("org.openjfx:javafx-controls:23")
+    implementation("org.openjfx:javafx-fxml:23")
     implementation(kotlin("stdlib"))
     implementation("net.java.dev.jna:jna:5.10.0")
     implementation("com.github.oshi:oshi-core:6.4.2")
@@ -38,6 +38,13 @@ tasks.jar {
             "Main-Class" to "com.gpustatix.Main"
         )
     }
+}
+
+tasks.withType<JavaExec> {
+    jvmArgs = listOf(
+        "--module-path", "/Users/jabka125/Downloads/javafx-sdk-23/lib", // Замените на путь к JavaFX SDK
+        "--add-modules", "javafx.controls,javafx.fxml"
+    )
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
