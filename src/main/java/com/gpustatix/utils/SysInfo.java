@@ -17,9 +17,12 @@ public class SysInfo {
         List<GraphicsCard> graphicCards = hal.getGraphicsCards();
         GraphicsCard gpu = graphicCards.get(0);
         String[] VendorGPU = (gpu.getName().split(" "));
-        System.out.println("\n" + cpu);
-        System.out.println("\n" + gpu.getName());
-        System.out.println("\n" + ram);
+        System.out.println(cpu);
+        System.out.println(gpu.getName() + "    " +
+                        " C" + "    " + " %" + "\n" +
+                        "MEM " + (gpu.getVRam() / 1073741824) + " GB"
+                );
+        System.out.println(ram);
 
         frameRate.update();
         System.out.println(frameRate.getFrameRate() + " FPS");
@@ -54,7 +57,8 @@ class Processor extends SysHardware {
         return getName() +
                 "   " + getLoad() +
                 "   " + getFreq() +
-                "   " + getTemp();
+                "   " + getTemp() +
+                "   " + getW();
     }
 
     public String getTemp(){
@@ -65,20 +69,11 @@ class Processor extends SysHardware {
         return Math.round((float) cpu.getCurrentFreq()[cpu.getCurrentFreq().length - 1] / (10*10*10*10*10*10)) + "MHz";
     }
 
-    public List<CentralProcessor.LogicalProcessor> getCores() {
-        return cpu.getLogicalProcessors();
-    }
-
-    public int countCores() {
-        return cpu.getLogicalProcessorCount();
-    }
-
-    public List<CentralProcessor.ProcessorCache> getCache() {
-        return cpu.getProcessorCaches();
-    }
-
     public String getLoad() {
         return Math.round(cpu.getProcessorCpuLoad(1000)[0]*100) + " %";
+    }
+    public String getW(){
+        return sensor.getCpuVoltage() + " W";
     }
 }
 
@@ -90,9 +85,7 @@ class RAM extends SysHardware{
 
     @Override
     public String toString() {
-        return "Total " + (RAM.getTotal() / 1000000) +
-                " MB" + "   " +
-                "Using " + ((RAM.getTotal() / 1000000) - RAM.getAvailable() / 1000000) + " MB";
+        return "RAM " + ((RAM.getTotal() / 1000000) - RAM.getAvailable() / 1000000) + " MB";
     }
 }
 
