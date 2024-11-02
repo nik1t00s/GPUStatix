@@ -2,16 +2,13 @@ package com.gpustatix.utils;
 
 import java.util.List;
 
-import javafx.application.Application;
-import javafx.scene.Scene;
-import javafx.scene.chart.LineChart;
-import javafx.scene.chart.NumberAxis;
-import javafx.scene.chart.XYChart;
-import javafx.stage.Stage;
 import oshi.SystemInfo;
 import oshi.hardware.*;
+import com.badlogic.gdx.utils.TimeUtils;
 
 public class SysInfo {
+
+    private static final FrameRate frameRate = new FrameRate();
 
     public static void displaySystemInfo() {
         Processor cpu = new Processor();
@@ -23,7 +20,9 @@ public class SysInfo {
         System.out.println("\n" + cpu);
         System.out.println("\n" + gpu.getName());
         System.out.println("\n" + ram);
-        GraphicsApp.launchGraphics();
+
+        frameRate.update();
+        System.out.println(frameRate.getFrameRate() + " FPS");
     }
 }
 
@@ -97,47 +96,33 @@ class RAM extends SysHardware{
     }
 }
 
-class GraphicsApp extends Application {
-    @Override
-    public void start(Stage stage) {
-        // Создание осей для графика
-        NumberAxis xAxis = new NumberAxis();
-        NumberAxis yAxis = new NumberAxis();
-        xAxis.setLabel("Time");
-        yAxis.setLabel("Value");
+class FrameRate {
+    private long lastTimeCounted;
+    private float sinceChange;
+    private float frameRate;
+    private int framesCount;
 
-        // Создание линейного графика
-        LineChart<Number, Number> lineChart = new LineChart<>(xAxis, yAxis);
-        lineChart.setTitle("Framerate and Frametime Over Time");
-
-        // Серия данных для framerate
-        XYChart.Series<Number, Number> framerateSeries = new XYChart.Series<>();
-        framerateSeries.setName("Framerate");
-
-        // Серия данных для frametime
-        XYChart.Series<Number, Number> frametimeSeries = new XYChart.Series<>();
-        frametimeSeries.setName("Frametime");
-
-        // Добавление данных в серии
-        for (int time = 0; time < 100; time++) {
-            double frameRate = 60 + Math.random() * 10;
-            double frameTime = 16 + Math.random();
-
-            framerateSeries.getData().add(new XYChart.Data<>(time, frameRate));
-            frametimeSeries.getData().add(new XYChart.Data<>(time, frameTime));
-        }
-
-        // Добавление серий на график
-        lineChart.getData().addAll(framerateSeries, frametimeSeries);
-
-        // Создание сцены и добавление графика
-        Scene scene = new Scene(lineChart, 800, 600);
-        stage.setScene(scene);
-        stage.setTitle("Performance Metrics");
-        stage.show();
+    public FrameRate() {
+        lastTimeCounted = TimeUtils.millis();
+        sinceChange = 0;
+        frameRate = 0;
+        framesCount = 0;
     }
 
-    public static void launchGraphics() {
-        launch();
+    public void update() {
+        framesCount++;
+        long delta = TimeUtils.timeSinceMillis(lastTimeCounted);
+        lastTimeCounted = TimeUtils.millis();
+
+        sinceChange += delta;
+        if (sinceChange >= 1000) {
+            sinceChange = 0;
+            frameRate = framesCount; // количество кадров за секунду
+            framesCount = 0; // сбрасываем счетчик кадров
+        }
+    }
+
+    public float getFrameRate() {
+        return frameRate;
     }
 }

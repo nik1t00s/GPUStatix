@@ -27,6 +27,7 @@ dependencies {
     implementation("org.apache.tika:tika-core:2.6.0") {
         exclude(group = "org.slf4j", module = "slf4j-api")
     }
+    implementation("com.badlogicgames.gdx:gdx:1.10.0")
 }
 
 application {
