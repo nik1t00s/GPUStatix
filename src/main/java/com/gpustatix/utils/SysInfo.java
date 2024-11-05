@@ -1,5 +1,9 @@
 package com.gpustatix.utils;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.List;
 
 import oshi.SystemInfo;
@@ -18,10 +22,9 @@ public class SysInfo {
         GraphicsCard gpu = graphicCards.get(0);
         String[] VendorGPU = (gpu.getName().split(" "));
         System.out.println(cpu);
-        System.out.println(gpu.getName() + "    " +
-                        " C" + "    " + " %" + "\n" +
-                        "MEM " + (gpu.getVRam() / 1073741824) + " GB"
-                );
+        System.out.println("GPU" + "    " + "\n" +
+                "MEM " + (gpu.getVRam()) + " GB"
+        );
         System.out.println(ram);
 
         frameRate.update();
@@ -42,38 +45,48 @@ abstract class SysHardware {
 
 class Processor extends SysHardware {
 
-    CentralProcessor cpu;
+    Processor cpu;
 
     public Processor() {
-        this.cpu = hal.getProcessor();
-    }
-
-    public String getName() {
-        return cpu.getProcessorIdentifier().getName().split(" CPU ")[0];
+        this.cpu = new Processor();
     }
 
     @Override
     public String toString() {
-        return getName() +
-                "   " + getLoad() +
-                "   " + getFreq() +
-                "   " + getTemp() +
-                "   " + getW();
+        try {
+            return "CPU" +
+                    "   " + getFreq() +
+                    "   " + getTemp();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String getFreq() throws IOException {
+        StringBuilder frequencies = new StringBuilder();
+        int cpuCount = Runtime.getRuntime().availableProcessors();
+        for (int i = 0; i < cpuCount; i++) {
+            File file = new File("/sys/devices/system/cpu/cpu" + i + "/cpufreq/scaling_cur_freq");
+            if (file.exists()) {
+                try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+                    String line = br.readLine();
+                    if (line != null) {
+                        double frequency = Double.parseDouble(line) / 1000.0; // Конвертация в MHz
+                        frequencies.append("CPU").append(i).append(": ").append(frequency).append(" MHz\n");
+                    }
+                }
+            } else {
+                frequencies.append("CPU").append(i).append(": N/A\n");
+            }
+        }
+        return frequencies.toString();
     }
 
     public String getTemp(){
+        if (sensor.getCpuTemperature() == 0){
+            return "ERROR";
+        }
         return Math.round(sensor.getCpuTemperature()) + " C";
-    }
-
-    public String getFreq() {
-        return Math.round((float) cpu.getCurrentFreq()[cpu.getCurrentFreq().length - 1] / (10*10*10*10*10*10)) + "MHz";
-    }
-
-    public String getLoad() {
-        return Math.round(cpu.getProcessorCpuLoad(1000)[0]*100) + " %";
-    }
-    public String getW(){
-        return sensor.getCpuVoltage() + " W";
     }
 }
 

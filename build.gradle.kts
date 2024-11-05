@@ -2,6 +2,7 @@ plugins {
     id("java")
     id("application")
     id("org.openjfx.javafxplugin") version "0.0.13"
+    id("com.github.johnrengelman.shadow") version "8.1.1"
     kotlin("jvm") version "1.8.10"
 }
 
@@ -22,7 +23,7 @@ dependencies {
     implementation("org.openjfx:javafx-controls:23")
     implementation("org.openjfx:javafx-fxml:23")
     implementation(kotlin("stdlib"))
-    implementation("net.java.dev.jna:jna:5.10.0")
+    implementation("net.java.dev.jna:jna:5.15.0")
     implementation("com.github.oshi:oshi-core:6.4.2")
     implementation("org.apache.tika:tika-core:2.6.0") {
         exclude(group = "org.slf4j", module = "slf4j-api")
@@ -51,6 +52,15 @@ tasks.withType<JavaExec> {
         "--module-path", "/Users/jabka125/Downloads/javafx-sdk-23/lib",
         "--add-modules", "javafx.controls,javafx.fxml"
     )
+}
+
+tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
+    archiveBaseName.set("GPUStatix-fat")
+    archiveClassifier.set("")
+    archiveVersion.set("")
+    manifest {
+        attributes("Main-Class" to "com.gpustatix.Main")
+    }
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
