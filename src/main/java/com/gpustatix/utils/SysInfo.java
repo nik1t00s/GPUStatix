@@ -48,7 +48,6 @@ class Processor extends SysHardware {
     Processor cpu;
 
     public Processor() {
-        this.cpu = new Processor();
     }
 
     @Override
@@ -63,23 +62,26 @@ class Processor extends SysHardware {
     }
 
     public String getFreq() throws IOException {
-        StringBuilder frequencies = new StringBuilder();
-        int cpuCount = Runtime.getRuntime().availableProcessors();
-        for (int i = 0; i < cpuCount; i++) {
-            File file = new File("/sys/devices/system/cpu/cpu" + i + "/cpufreq/scaling_cur_freq");
-            if (file.exists()) {
-                try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-                    String line = br.readLine();
-                    if (line != null) {
-                        double frequency = Double.parseDouble(line) / 1000.0; // Конвертация в MHz
-                        frequencies.append("CPU").append(i).append(": ").append(frequency).append(" MHz\n");
+        double totalFreq = 0;
+        int count = 0;
+
+        try (BufferedReader br = new BufferedReader(new FileReader("/proc/cpuinfo"))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (line.startsWith("cpu MHz")) {
+                    // Извлекаем значение частоты из строки
+                    String[] parts = line.split(":\\s+");
+                    if (parts.length > 1) {
+                        totalFreq += Double.parseDouble(parts[1]);
+                        count++;
                     }
                 }
-            } else {
-                frequencies.append("CPU").append(i).append(": N/A\n");
             }
         }
-        return frequencies.toString();
+
+        // Рассчитываем среднюю частоту
+        double avgFreq = (count > 0) ? totalFreq / count : 0;
+        return avgFreq + " MHz";
     }
 
     public String getTemp(){
