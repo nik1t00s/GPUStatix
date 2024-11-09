@@ -3,6 +3,7 @@ package com.gpustatix.utils;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 
 import com.badlogic.gdx.utils.TimeUtils;
 
@@ -70,28 +71,38 @@ class Processor extends SysHardware {
     }
 
     public String getTemp(){
-        return " C";
+        Sensors sensors = new Sensors();
+        return sensors.getTemperature() + " C";
     }
 }
 
 class RAM extends SysHardware{
-    RAM ram;
     public String getUsedRAM() throws IOException{
         long totalMemory = 0;
         long freeMemory = 0;
-        try (BufferedReader br = new BufferedReader(new FileReader("/proc/meminfo")){
+        try (BufferedReader br = new BufferedReader(new FileReader("/proc/meminfo"))){
             while ((line = br.readLine()) != null) {
                 if (line.startsWith("MemTotal:")){
                     String[] parts = line.split(":\\s+");
-                    totalMemory += (long) Double.parseDouble(parts[1]);
+                    totalMemory += Long.parseLong(parts[1].replace(" kB", "".trim()));
                 }
                 else if (line.startsWith("MemAvailable:")){
                     String[] parts = line.split(":\\s+");
-                    freeMemory += (long) Double.parseDouble(parts[1]);
+                    freeMemory += Long.parseLong(parts[1].replace(" kB", "".trim()));
                 }
             }
         }
-        return Math.round((totalMemory - freeMemory) / 1024) + " MB";
+        long usedMemory = totalMemory - freeMemory;
+        return Math.round(usedMemory / 1024.0) + " MB";
+    }
+
+    @Override
+    public String toString() {
+        try {
+            return "RAM" + "    " + getUsedRAM();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
 
@@ -123,5 +134,21 @@ class FrameRate {
 
     public float getFrameRate() {
         return frameRate;
+    }
+}
+
+class Sensors extends SysHardware{
+    public String getTemperature(){
+        StringBuilder temperatureInfo = new StringBuilder();
+        try{
+            Process process = new ProcessBuilder("sensors").start();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            while ((line = reader.readLine()) != null){
+                temperatureInfo.append(line).append("\n");
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return temperatureInfo.toString();
     }
 }
