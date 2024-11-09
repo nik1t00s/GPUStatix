@@ -1,13 +1,9 @@
 package com.gpustatix.utils;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.List;
 
-import oshi.SystemInfo;
-import oshi.hardware.*;
 import com.badlogic.gdx.utils.TimeUtils;
 
 public class SysInfo {
@@ -17,13 +13,9 @@ public class SysInfo {
     public static void displaySystemInfo() {
         Processor cpu = new Processor();
         RAM ram = new RAM();
-        HardwareAbstractionLayer hal = SysHardware.getHal();
-        List<GraphicsCard> graphicCards = hal.getGraphicsCards();
-        GraphicsCard gpu = graphicCards.get(0);
-        String[] VendorGPU = (gpu.getName().split(" "));
         System.out.println(cpu);
         System.out.println("GPU" + "    " + "\n" +
-                "MEM " + (gpu.getVRam()) + " GB"
+                "MEM " + " GB"
         );
         System.out.println(ram);
 
@@ -34,13 +26,8 @@ public class SysInfo {
 
 abstract class SysHardware {
 
-    static SystemInfo si = new SystemInfo();
-    static HardwareAbstractionLayer hal = si.getHardware();
-    static Sensors sensor = hal.getSensors();
+    String line;
 
-    public static HardwareAbstractionLayer getHal() {
-        return hal;
-    }
 }
 
 class Processor extends SysHardware {
@@ -66,7 +53,6 @@ class Processor extends SysHardware {
         int count = 0;
 
         try (BufferedReader br = new BufferedReader(new FileReader("/proc/cpuinfo"))) {
-            String line;
             while ((line = br.readLine()) != null) {
                 if (line.startsWith("cpu MHz")) {
                     // Извлекаем значение частоты из строки
@@ -78,29 +64,34 @@ class Processor extends SysHardware {
                 }
             }
         }
-
         // Рассчитываем среднюю частоту
         double avgFreq = (count > 0) ? totalFreq / count : 0;
-        return avgFreq + " MHz";
+        return Math.round(avgFreq) + " MHz";
     }
 
     public String getTemp(){
-        if (sensor.getCpuTemperature() == 0){
-            return "ERROR";
-        }
-        return Math.round(sensor.getCpuTemperature()) + " C";
+        return " C";
     }
 }
 
 class RAM extends SysHardware{
-    GlobalMemory RAM;
-    public RAM(){
-        this.RAM = hal.getMemory();
-    }
-
-    @Override
-    public String toString() {
-        return "RAM " + ((RAM.getTotal() / 1000000) - RAM.getAvailable() / 1000000) + " MB";
+    RAM ram;
+    public String getUsedRAM() throws IOException{
+        long totalMemory = 0;
+        long freeMemory = 0;
+        try (BufferedReader br = new BufferedReader(new FileReader("/proc/meminfo")){
+            while ((line = br.readLine()) != null) {
+                if (line.startsWith("MemTotal:")){
+                    String[] parts = line.split(":\\s+");
+                    totalMemory += (long) Double.parseDouble(parts[1]);
+                }
+                else if (line.startsWith("MemAvailable:")){
+                    String[] parts = line.split(":\\s+");
+                    freeMemory += (long) Double.parseDouble(parts[1]);
+                }
+            }
+        }
+        return Math.round((totalMemory - freeMemory) / 1024) + " MB";
     }
 }
 
