@@ -25,15 +25,11 @@ public class SysInfo {
     }
 }
 
-abstract class SysHardware {
-
-    String line;
-
-}
-
-class Processor extends SysHardware {
+class Processor {
 
     Processor cpu;
+
+    String line;
 
     public Processor() {
     }
@@ -76,7 +72,8 @@ class Processor extends SysHardware {
     }
 }
 
-class RAM extends SysHardware{
+class RAM{
+    String line;
     public String getUsedRAM() throws IOException{
         long totalMemory = 0;
         long freeMemory = 0;
@@ -137,7 +134,8 @@ class FrameRate {
     }
 }
 
-class Sensors extends SysHardware{
+class Sensors{
+    String line;
     public String getTemperature(){
         StringBuilder temperatureInfo = new StringBuilder();
         try{

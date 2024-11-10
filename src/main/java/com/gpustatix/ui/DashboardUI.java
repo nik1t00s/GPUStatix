@@ -1,23 +1,53 @@
 package com.gpustatix.ui;
 
-import javafx.application.Application;
-import javafx.scene.Scene;
-import javafx.scene.layout.VBox;
-import javafx.stage.Stage;
+import com.gpustatix.utils.GPUSettings;
 
-public class DashboardUI extends Application {
+import javax.swing.*;
+import java.awt.*;
 
-    @Override
-    public void start(Stage stage) throws Exception {
-        stage.setTitle("GPUStatix Dashboard");
+public class DashboardUI extends JFrame {
+    public DashboardUI(GPUSettings gpuSettings){
+        setTitle("GPUStatix Dashboard");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(400,600);
+        setLayout(new BorderLayout());
 
-        VBox root = new VBox();
+        JLabel gpuLabel = new JLabel("GPU : ", SwingConstants.CENTER);
+        gpuLabel.setFont(new Font("Times New Roman", Font.BOLD, 16));
+        gpuLabel.setHorizontalAlignment(JLabel.CENTER);
+        add(gpuLabel, BorderLayout.NORTH);
 
-        Scene scene = new Scene(root, 800,600);
-        stage.setScene(scene);
-        stage.show();
+        JPanel slidersPanel = new JPanel();
+        slidersPanel.setLayout(new GridLayout(6,1));
+        add(slidersPanel, BorderLayout.CENTER);
+
+        //  здесь будут ползунки
+
+        JPanel buttonPanel = new JPanel();
+        JButton saveButton = new JButton("Save Profile");
+        JButton settingsButton = new JButton("Settings");
+        JButton resetButton = new JButton("Reset");
+
+        buttonPanel.add(saveButton);
+        buttonPanel.add(settingsButton);
+        buttonPanel.add(resetButton);
+
+        add(buttonPanel,BorderLayout.SOUTH);
+
     }
-    public static void main(String[] args){
-        launch(args);
+    private JSlider createSlider(String label, int min, int max, int initial){
+        JPanel panel = new JPanel(new BorderLayout());
+        JLabel sliderLabel = new JLabel(label);
+        sliderLabel.setHorizontalAlignment(JLabel.CENTER);
+        JSlider slider = new JSlider(JSlider.HORIZONTAL, min, max, initial);
+        panel.add(sliderLabel, BorderLayout.NORTH);
+        panel.add(slider, BorderLayout.CENTER);
+        return slider;
+    }
+
+    public static void main(String[] args) {
+        GPUSettings gpuSettings = new GPUSettings();
+        DashboardUI dashboard = new DashboardUI(gpuSettings);
+        dashboard.setVisible(true);
     }
 }
