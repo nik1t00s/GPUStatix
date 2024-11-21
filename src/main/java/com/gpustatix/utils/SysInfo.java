@@ -25,14 +25,20 @@ public class SysInfo {
     }
 }
 
+class InfoAboutPC{
+    String line;
+    StringBuilder neofetchInfo = new StringBuilder();
+    Process process = new ProcessBuilder("neofetch").start();
+    BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+    InfoAboutPC() throws IOException {
+    }
+}
+
 class Processor {
 
     Processor cpu;
 
     String line;
-
-    public Processor() {
-    }
 
     @Override
     public String toString() {

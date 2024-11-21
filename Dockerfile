@@ -3,7 +3,7 @@ FROM ubuntu:latest
 
 # Обновляем пакеты и устанавливаем необходимые зависимости
 RUN apt-get update && \
-    apt-get install -y openjdk-17-jdk curl unzip lm-sensors && \
+    apt-get install -y openjdk-17-jdk curl unzip lm-sensors neofetch && \
     apt-get clean
 
 # Устанавливаем Gradle
