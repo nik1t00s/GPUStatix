@@ -11,15 +11,21 @@ public class SysInfo {
 
     private static final FrameRate frameRate = new FrameRate();
 
-    public static void displaySystemInfo() {
-        Processor cpu = new Processor();
+    public static void displaySystemInfo() throws IOException {
+        // Processor cpu = new Processor();
         RAM ram = new RAM();
-        System.out.println(cpu);
-        System.out.println("GPU" + "    " + "\n" +
-                "MEM " + " GB"
-        );
+        InfoAboutPC info = new InfoAboutPC();
+        // System.out.println(cpu);
+        if (info.checkIntegrated()){
+           System.out.println("INTEGRATED");
+        }
+        else{
+            System.out.println("GPU" + "    " + "\n" +
+                    "MEM " + " GB"
+            );
+        }
         System.out.println(ram);
-
+        System.out.println(info);
         frameRate.update();
         System.out.println(frameRate.getFrameRate() + " FPS");
     }
@@ -27,10 +33,58 @@ public class SysInfo {
 
 class InfoAboutPC{
     String line;
-    StringBuilder neofetchInfo = new StringBuilder();
-    Process process = new ProcessBuilder("neofetch").start();
-    BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
     InfoAboutPC() throws IOException {
+    }
+    public String getResolution() throws IOException{
+        StringBuilder resolution = new StringBuilder();
+        try{
+            Process process = new ProcessBuilder("neofetch", "--off").start();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            while ((line = reader.readLine()) != null){
+                if (line.contains("Resolution")){
+                    String[] parts = line.split(" ");
+                    if (parts.length > 1) {
+                        resolution.append(parts[1].trim());
+                    }
+                    break;
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return resolution.toString();
+    }
+
+    @Override
+    public String toString() {
+        try {
+            return "Resolution" + "  " + getResolution() + "\n";
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public boolean checkIntegrated() throws IOException{
+        String vendor = "";
+        try{
+            Process process = new ProcessBuilder("neofetch", "--off").start();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            while ((line = reader.readLine()) != null){
+                if (line.contains("GPU")) {
+                    String[] parts = line.split(" ");
+                    if (parts.length > 1) {
+                        vendor += parts[1].trim();
+                    }
+                    break;
+                }
+            }
+            if (vendor.equals("Intel")){
+                return true;
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return false;
     }
 }
 
@@ -54,11 +108,9 @@ class Processor {
     public String getFreq() throws IOException {
         double totalFreq = 0;
         int count = 0;
-
         try (BufferedReader br = new BufferedReader(new FileReader("/proc/cpuinfo"))) {
             while ((line = br.readLine()) != null) {
                 if (line.startsWith("cpu MHz")) {
-                    // Извлекаем значение частоты из строки
                     String[] parts = line.split(":\\s+");
                     if (parts.length > 1) {
                         totalFreq += Double.parseDouble(parts[1]);
@@ -67,7 +119,6 @@ class Processor {
                 }
             }
         }
-        // Рассчитываем среднюю частоту
         double avgFreq = (count > 0) ? totalFreq / count : 0;
         return Math.round(avgFreq) + " MHz";
     }
@@ -81,22 +132,23 @@ class Processor {
 class RAM{
     String line;
     public String getUsedRAM() throws IOException{
-        long totalMemory = 0;
-        long freeMemory = 0;
-        try (BufferedReader br = new BufferedReader(new FileReader("/proc/meminfo"))){
-            while ((line = br.readLine()) != null) {
-                if (line.startsWith("MemTotal:")){
-                    String[] parts = line.split(":\\s+");
-                    totalMemory += Long.parseLong(parts[1].replace(" kB", "".trim()));
-                }
-                else if (line.startsWith("MemAvailable:")){
-                    String[] parts = line.split(":\\s+");
-                    freeMemory += Long.parseLong(parts[1].replace(" kB", "".trim()));
+        StringBuilder usedRAM = new StringBuilder();
+        try{
+            Process process = new ProcessBuilder("neofetch", "--off").start();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            while ((line = reader.readLine()) != null){
+                if (line.contains("Memory")) {
+                    String[] parts = line.split(" ");
+                    if (parts.length > 1) {
+                        usedRAM.append(parts[1].trim());
+                    }
+                    break;
                 }
             }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-        long usedMemory = totalMemory - freeMemory;
-        return Math.round(usedMemory / 1024.0) + " MB";
+        return usedRAM.toString();
     }
 
     @Override

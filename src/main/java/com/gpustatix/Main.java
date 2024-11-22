@@ -3,10 +3,10 @@ package com.gpustatix;
 import com.gpustatix.ui.DashboardUI;
 import com.gpustatix.utils.SysInfo;
 
+import java.io.IOException;
+
 public class Main {
-    public static void main(String[] args) {
-        for (int i = 0; i < 10; i++){
-           SysInfo.displaySystemInfo();
-        }
+    public static void main(String[] args) throws IOException {
+        SysInfo.displaySystemInfo();
     }
 }
