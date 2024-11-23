@@ -11,11 +11,11 @@ public class SysInfo {
 
     private static final FrameRate frameRate = new FrameRate();
 
-    public static void displaySystemInfo() throws IOException {
-        // Processor cpu = new Processor();
+    public static void displaySystemInfo() {
+        Processor cpu = new Processor();
         RAM ram = new RAM();
         InfoAboutPC info = new InfoAboutPC();
-        // System.out.println(cpu);
+        System.out.println(cpu);
         if (info.checkIntegrated()){
            System.out.println("INTEGRATED");
         }
@@ -33,7 +33,7 @@ public class SysInfo {
 
 class InfoAboutPC{
     String line;
-    InfoAboutPC() throws IOException {
+    InfoAboutPC() {
     }
     public String getResolution() throws IOException{
         StringBuilder resolution = new StringBuilder();
@@ -64,7 +64,7 @@ class InfoAboutPC{
         }
     }
 
-    public boolean checkIntegrated() throws IOException{
+    public boolean checkIntegrated() {
         String vendor = "";
         try{
             Process process = new ProcessBuilder("neofetch", "--off").start();
@@ -90,8 +90,6 @@ class InfoAboutPC{
 
 class Processor {
 
-    Processor cpu;
-
     String line;
 
     @Override
@@ -99,10 +97,30 @@ class Processor {
         try {
             return "CPU" +
                     "   " + getFreq() +
-                    "   " + getTemp();
+                    "   " + getTemperature() +
+                    "   " + getCpuVendor();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public String getCpuVendor() {
+        String vendor = "";
+        try(BufferedReader br = new BufferedReader(new FileReader("/proc/cpuinfo"))) {
+            String line;
+            while ((line = br.readLine()) != null){
+                if (line.startsWith("vendor_id")){
+                    String[] parts = line.split(":\\s+");
+                    if (parts.length > 1){
+                        vendor = parts[1].trim();
+                        break;
+                    }
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return vendor.equals("AuthenticAMD") ? "AMD" : vendor.equals("GenuineIntel") ? "Intel" : "Unknown";
     }
 
     public String getFreq() throws IOException {
@@ -123,9 +141,30 @@ class Processor {
         return Math.round(avgFreq) + " MHz";
     }
 
-    public String getTemp(){
-        Sensors sensors = new Sensors();
-        return sensors.getTemperature() + " C";
+    public String getTemperature(){
+        StringBuilder temperatureInfo = new StringBuilder();
+        String cpuVendor = getCpuVendor();
+        try{
+            Process process = new ProcessBuilder("sensors").start();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            while ((line = reader.readLine()) != null){
+                if (line.contains("Tctl:") && cpuVendor.equals("AMD")){
+                    String[] parts = line.split(":");
+                    if (parts.length > 1){
+                        temperatureInfo.append(parts[1].trim());
+                    }
+                    else if (line.contains("temp1:") && cpuVendor.equals("Intel")){
+                        parts = line.split(":");
+                        if (parts.length > 1){
+                            temperatureInfo.append(parts[1].trim());
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return temperatureInfo.toString();
     }
 }
 
@@ -189,22 +228,5 @@ class FrameRate {
 
     public float getFrameRate() {
         return frameRate;
-    }
-}
-
-class Sensors{
-    String line;
-    public String getTemperature(){
-        StringBuilder temperatureInfo = new StringBuilder();
-        try{
-            Process process = new ProcessBuilder("sensors").start();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            while ((line = reader.readLine()) != null){
-                temperatureInfo.append(line).append("\n");
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return temperatureInfo.toString();
     }
 }
