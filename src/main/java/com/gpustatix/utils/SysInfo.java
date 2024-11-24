@@ -9,33 +9,9 @@ import com.badlogic.gdx.utils.TimeUtils;
 
 public class SysInfo {
 
-    private static final FrameRate frameRate = new FrameRate();
+    static String line;
 
-    public static void displaySystemInfo() {
-        Processor cpu = new Processor();
-        RAM ram = new RAM();
-        InfoAboutPC info = new InfoAboutPC();
-        System.out.println(cpu);
-        if (info.checkIntegrated()){
-           System.out.println("INTEGRATED");
-        }
-        else{
-            System.out.println("GPU" + "    " + "\n" +
-                    "MEM " + " GB"
-            );
-        }
-        System.out.println(ram);
-        System.out.println(info);
-        frameRate.update();
-        System.out.println(frameRate.getFrameRate() + " FPS");
-    }
-}
-
-class InfoAboutPC{
-    String line;
-    InfoAboutPC() {
-    }
-    public String getResolution() throws IOException{
+    public static String getResolution() {
         StringBuilder resolution = new StringBuilder();
         try{
             Process process = new ProcessBuilder("neofetch", "--off").start();
@@ -55,16 +31,7 @@ class InfoAboutPC{
         return resolution.toString();
     }
 
-    @Override
-    public String toString() {
-        try {
-            return "Resolution" + "  " + getResolution() + "\n";
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public boolean checkIntegrated() {
+    public static boolean checkIntegrated() {
         String vendor = "";
         try{
             Process process = new ProcessBuilder("neofetch", "--off").start();
@@ -86,6 +53,26 @@ class InfoAboutPC{
         }
         return false;
     }
+
+    private static final FrameRate frameRate = new FrameRate();
+
+    public static void displaySystemInfo() {
+        Processor cpu = new Processor();
+        RAM ram = new RAM();
+        System.out.println(cpu);
+        if (checkIntegrated()){
+           System.out.println("INTEGRATED");
+        }
+        else{
+            System.out.println("GPU" + "    " + "\n" +
+                    "MEM " + " MB"
+            );
+        }
+        System.out.println(ram);
+        // System.out.println(getResolution());
+        frameRate.update();
+        System.out.println(frameRate.getFrameRate() + " FPS");
+    }
 }
 
 class Processor {
@@ -96,15 +83,16 @@ class Processor {
     public String toString() {
         try {
             return "CPU" +
-                    "   " + getFreq() +
                     "   " + getTemperature() +
-                    "   " + getCpuVendor();
+                    "   " + getLoad() +
+                    "   " + getFreq() +
+                    "   " + getV();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public String getCpuVendor() {
+    public String getVendor() {
         String vendor = "";
         try(BufferedReader br = new BufferedReader(new FileReader("/proc/cpuinfo"))) {
             String line;
@@ -129,7 +117,7 @@ class Processor {
         try (BufferedReader br = new BufferedReader(new FileReader("/proc/cpuinfo"))) {
             while ((line = br.readLine()) != null) {
                 if (line.startsWith("cpu MHz")) {
-                    String[] parts = line.split(":\\s+");
+                    String[] parts = line.trim().split(":\\s+");
                     if (parts.length > 1) {
                         totalFreq += Double.parseDouble(parts[1]);
                         count++;
@@ -138,12 +126,12 @@ class Processor {
             }
         }
         double avgFreq = (count > 0) ? totalFreq / count : 0;
-        return Math.round(avgFreq) + " MHz";
+        return Math.round(avgFreq) + "MHz";
     }
 
     public String getTemperature(){
         StringBuilder temperatureInfo = new StringBuilder();
-        String cpuVendor = getCpuVendor();
+        String cpuVendor = getVendor();
         try{
             Process process = new ProcessBuilder("sensors").start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
@@ -165,6 +153,48 @@ class Processor {
             throw new RuntimeException(e);
         }
         return temperatureInfo.toString();
+    }
+    public String getLoad(){
+        double userCpu = 0.0;
+        double systemCpu = 0.0;
+        int lineCount = 0;
+        try {
+            Process process = new ProcessBuilder("sar", "-u", "1", "1").start();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            while ((line = reader.readLine()) != null){
+                if (lineCount == 4){
+                    String[] parts = line.trim().split("\\s+");
+                    if (parts.length > 6){
+                        userCpu += Double.parseDouble(parts[2].replace(",","."));
+                        systemCpu += Double.parseDouble(parts[4].replace(",","."));
+                    }
+                    break;
+                }
+                lineCount++;
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return Math.round(userCpu + systemCpu) + "%";
+    }
+    public String getV(){
+        double v = 0.0;
+        try{
+            Process process = new ProcessBuilder("sensors").start();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            while ((line = reader.readLine()) != null){
+                if (line.startsWith("in1:")){
+                    String[] parts = line.trim().split("\\s+");
+                    if (parts.length > 1){
+                        v += Double.parseDouble(parts[1]);
+                    }
+                    break;
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return v + "V";
     }
 }
 
