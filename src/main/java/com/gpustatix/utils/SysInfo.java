@@ -5,8 +5,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-import com.badlogic.gdx.utils.TimeUtils;
-
 public class SysInfo {
 
     static String line;
@@ -54,24 +52,22 @@ public class SysInfo {
         return false;
     }
 
-    private static final FrameRate frameRate = new FrameRate();
-
-    public static void displaySystemInfo() {
+    public static String displaySystemInfo() {
         Processor cpu = new Processor();
         RAM ram = new RAM();
-        System.out.println(cpu);
+        StringBuilder info = new StringBuilder();
+        info.append(cpu).append("\n");
         if (checkIntegrated()){
-           System.out.println("INTEGRATED");
+           info.append("INTEGRATED\n");
         }
         else{
-            System.out.println("GPU" + "    " + "\n" +
+            info.append("GPU" + "    " + "\n" +
                     "MEM " + " MB"
             );
         }
-        System.out.println(ram);
-        // System.out.println(getResolution());
-        frameRate.update();
-        System.out.println(frameRate.getFrameRate() + " FPS");
+        info.append(ram);
+        // info.append(getResolution());
+        return info.toString();
     }
 }
 
@@ -132,20 +128,20 @@ class Processor {
     public String getTemperature(){
         StringBuilder temperatureInfo = new StringBuilder();
         String cpuVendor = getVendor();
-        try{
+        try {
             Process process = new ProcessBuilder("sensors").start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            while ((line = reader.readLine()) != null){
-                if (line.contains("Tctl:") && cpuVendor.equals("AMD")){
+            while ((line = reader.readLine()) != null) {
+                if (line.contains("Tctl:") && cpuVendor.equals("AMD")) {
                     String[] parts = line.split(":");
-                    if (parts.length > 1){
+                    if (parts.length > 1) {
                         temperatureInfo.append(parts[1].trim());
                     }
-                    else if (line.contains("temp1:") && cpuVendor.equals("Intel")){
-                        parts = line.split(":");
-                        if (parts.length > 1){
-                            temperatureInfo.append(parts[1].trim());
-                        }
+                } else if (line.contains("Package id 0:") && cpuVendor.equals("Intel")) {
+                    String[] parts = line.trim().split(":\\s+");
+                    if (parts.length > 1) {
+                        String[] linepartts = parts[1].trim().split(" ");
+                        temperatureInfo.append(linepartts[0].trim());
                     }
                 }
             }
@@ -155,27 +151,30 @@ class Processor {
         return temperatureInfo.toString();
     }
     public String getLoad(){
-        double userCpu = 0.0;
-        double systemCpu = 0.0;
-        int lineCount = 0;
         try {
-            Process process = new ProcessBuilder("sar", "-u", "1", "1").start();
+            ProcessBuilder processBuilder = new ProcessBuilder("top", "-bn1");
+            Process process = processBuilder.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            while ((line = reader.readLine()) != null){
-                if (lineCount == 4){
-                    String[] parts = line.trim().split("\\s+");
-                    if (parts.length > 6){
-                        userCpu += Double.parseDouble(parts[2].replace(",","."));
-                        systemCpu += Double.parseDouble(parts[4].replace(",","."));
-                    }
+            double cpuLoad = -1.0;
+            while ((line = reader.readLine()) != null) {
+                if (line.startsWith("%Cpu(s):")) {
+                    String[] tokens = line.replace(",", "").split("\\s+");
+                    cpuLoad = 100.0 - Double.parseDouble(tokens[3]);
                     break;
                 }
-                lineCount++;
+            }
+            reader.close();
+
+            if (cpuLoad >= 0.0){
+                return String.format("%.2f%%", cpuLoad);
+            }
+            else{
+                return "Ошибка: не удалось получить загрузку CPU";
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+           e.printStackTrace();
+           return "Ошибка при выполнении команды top.";
         }
-        return Math.round(userCpu + systemCpu) + "%";
     }
     public String getV(){
         double v = 0.0;
@@ -227,36 +226,5 @@ class RAM{
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-}
-
-class FrameRate {
-    private long lastTimeCounted;
-    private float sinceChange;
-    private float frameRate;
-    private int framesCount;
-
-    public FrameRate() {
-        lastTimeCounted = TimeUtils.millis();
-        sinceChange = 0;
-        frameRate = 0;
-        framesCount = 0;
-    }
-
-    public void update() {
-        framesCount++;
-        long delta = TimeUtils.timeSinceMillis(lastTimeCounted);
-        lastTimeCounted = TimeUtils.millis();
-
-        sinceChange += delta;
-        if (sinceChange >= 1000) {
-            sinceChange = 0;
-            frameRate = framesCount; // количество кадров за секунду
-            framesCount = 0; // сбрасываем счетчик кадров
-        }
-    }
-
-    public float getFrameRate() {
-        return frameRate;
     }
 }
