@@ -1,5 +1,6 @@
 package com.gpustatix.utils;
 
+import java.awt.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -9,24 +10,31 @@ public class SysInfo {
 
     static String line;
 
-    public static String getResolution() {
-        StringBuilder resolution = new StringBuilder();
-        try{
+    public static Dimension getResolution() {
+        try {
             Process process = new ProcessBuilder("neofetch", "--off").start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            while ((line = reader.readLine()) != null){
-                if (line.contains("Resolution")){
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.contains("Resolution")) {
                     String[] parts = line.split(" ");
-                    if (parts.length > 1) {
-                        resolution.append(parts[1].trim());
+                    for (String part : parts) {
+                        if (part.contains("x")) {
+                            String[] resolutionParts = part.split("x");
+                            if (resolutionParts.length == 2) {
+                                int width = Integer.parseInt(resolutionParts[0].trim());
+                                int height = Integer.parseInt(resolutionParts[1].trim());
+                                return new Dimension(width, height);
+                            }
+                        }
                     }
-                    break;
                 }
             }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } catch (IOException | NumberFormatException e) {
+            e.printStackTrace();
         }
-        return resolution.toString();
+        // Возвращаем стандартное разрешение, если определить не удалось
+        return new Dimension(800, 600);
     }
 
     public static boolean checkIntegrated() {
@@ -58,7 +66,7 @@ public class SysInfo {
         StringBuilder info = new StringBuilder();
         info.append(cpu).append("\n");
         if (checkIntegrated()){
-           info.append("INTEGRATED\n");
+            info.append("INTEGRATED\n");
         }
         else{
             info.append("GPU" + "    " + "\n" +
@@ -150,50 +158,74 @@ class Processor {
         }
         return temperatureInfo.toString();
     }
-    public String getLoad(){
+    public String getLoad() {
         try {
-            ProcessBuilder processBuilder = new ProcessBuilder("top", "-bn1");
-            Process process = processBuilder.start();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            double cpuLoad = -1.0;
-            while ((line = reader.readLine()) != null) {
-                if (line.startsWith("%Cpu(s):")) {
-                    String[] tokens = line.replace(",", "").split("\\s+");
-                    cpuLoad = 100.0 - Double.parseDouble(tokens[3]);
-                    break;
-                }
-            }
-            reader.close();
+            long idleTime1 = 0, totalTime1 = 0, idleTime2 = 0, totalTime2 = 0;
 
-            if (cpuLoad >= 0.0){
-                return String.format("%.2f%%", cpuLoad);
-            }
-            else{
-                return "Ошибка: не удалось получить загрузку CPU";
-            }
-        } catch (IOException e) {
-           e.printStackTrace();
-           return "Ошибка при выполнении команды top.";
+            // Чтение первого состояния
+            String[] firstStat = getCpuStat();
+            idleTime1 = Long.parseLong(firstStat[4]);
+            totalTime1 = calculateTotal(firstStat);
+
+            // Задержка для измерения изменений (1 секунда)
+            Thread.sleep(1000);
+
+            // Чтение второго состояния
+            String[] secondStat = getCpuStat();
+            idleTime2 = Long.parseLong(secondStat[4]);
+            totalTime2 = calculateTotal(secondStat);
+
+            // Вычисление загрузки
+            long deltaIdle = idleTime2 - idleTime1;
+            long deltaTotal = totalTime2 - totalTime1;
+            double cpuLoad = 100.0 * (1.0 - ((double) deltaIdle / deltaTotal));
+
+            return Math.round(cpuLoad) + "%";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Ошибка: не удалось получить загрузку CPU";
         }
     }
-    public String getV(){
-        double v = 0.0;
-        try{
-            Process process = new ProcessBuilder("sensors").start();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            while ((line = reader.readLine()) != null){
-                if (line.startsWith("in1:")){
-                    String[] parts = line.trim().split("\\s+");
-                    if (parts.length > 1){
-                        v += Double.parseDouble(parts[1]);
+
+    private String[] getCpuStat() throws IOException {
+        try (BufferedReader br = new BufferedReader(new FileReader("/proc/stat"))) {
+            String line = br.readLine(); // Первая строка содержит общую статистику CPU
+            return line.split("\\s+");
+        }
+    }
+
+    private long calculateTotal(String[] stat) {
+        long total = 0;
+        for (int i = 1; i < stat.length; i++) { // Пропускаем "cpu" в начале строки
+            total += Long.parseLong(stat[i]);
+        }
+        return total;
+    }
+    public String getV() {
+        String voltageDir = "/sys/class/hwmon/";
+        double voltageMillivolts = -1;
+
+        try {
+            java.io.File hwmonDir = new java.io.File(voltageDir);
+            if (hwmonDir.exists() && hwmonDir.isDirectory()) {
+                for (java.io.File hwmon : hwmonDir.listFiles()) {
+                    if (hwmon.isDirectory()) {
+                        for (java.io.File file : hwmon.listFiles()) {
+                            if (file.getName().startsWith("in") && file.getName().endsWith("_input")) {
+                                try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+                                    voltageMillivolts = Double.parseDouble(br.readLine().trim()) / 1000.0;
+                                    return String.format("%.2fV", voltageMillivolts);
+                                }
+                            }
+                        }
                     }
-                    break;
                 }
             }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            return "Напряжение недоступно";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Ошибка при получении данных";
         }
-        return v + "V";
     }
 }
 
