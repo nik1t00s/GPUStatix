@@ -69,12 +69,12 @@ class Processor {
 
     public String getVendor() {
         String vendor = "";
-        try(BufferedReader br = new BufferedReader(new FileReader("/proc/cpuinfo"))) {
+        try (BufferedReader br = new BufferedReader(new FileReader("/proc/cpuinfo"))) {
             String line;
-            while ((line = br.readLine()) != null){
-                if (line.startsWith("vendor_id")){
+            while ((line = br.readLine()) != null) {
+                if (line.startsWith("vendor_id")) {
                     String[] parts = line.split(":\\s+");
-                    if (parts.length > 1){
+                    if (parts.length > 1) {
                         vendor = parts[1].trim();
                         break;
                     }
@@ -104,7 +104,7 @@ class Processor {
         return Math.round(avgFreq) + "MHz";
     }
 
-    public String getTemperature(){
+    public String getTemperature() {
         StringBuilder temperatureInfo = new StringBuilder();
         String cpuVendor = getVendor();
         try {
@@ -129,6 +129,7 @@ class Processor {
         }
         return temperatureInfo.toString();
     }
+
     public String getLoad() {
         try {
             long idleTime1 = 0, totalTime1 = 0, idleTime2 = 0, totalTime2 = 0;
@@ -172,6 +173,7 @@ class Processor {
         }
         return total;
     }
+
     public String getV() {
         String voltageDir = "/sys/class/hwmon/";
         double voltageMillivolts = -1;
@@ -189,7 +191,7 @@ class Processor {
                                         String inputFile = file.getAbsolutePath().replace("_label", "_input");
                                         try (BufferedReader inputReader = new BufferedReader(new FileReader(inputFile))) {
                                             voltageMillivolts = Double.parseDouble(inputReader.readLine().trim()) / 1000.0;
-                                            return String.format("CPU Voltage: %.2fV", voltageMillivolts);
+                                            return String.format("C%.2fV", voltageMillivolts);
                                         }
                                     }
                                 }
@@ -197,6 +199,22 @@ class Processor {
                         }
                     }
                 }
+            }
+            double v = 0.0;
+            try {
+                Process process = new ProcessBuilder("sensors").start();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                while ((line = reader.readLine()) != null) {
+                    if (line.startsWith("in1:")) {
+                        String[] parts = line.trim().split("\\s+");
+                        if (parts.length > 1) {
+                            v += Double.parseDouble(parts[1]);
+                            return v + "V";
+                        }
+                    }
+                }
+            } catch (IOException | NumberFormatException e) {
+                throw new RuntimeException(e);
             }
             return "CPU Voltage not available";
         } catch (Exception e) {
