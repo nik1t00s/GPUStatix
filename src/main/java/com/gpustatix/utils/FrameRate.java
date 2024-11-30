@@ -1,29 +1,27 @@
 package com.gpustatix.utils;
 
 public class FrameRate {
-    private long lastFrameTime;
+    private long lastTime;
     private int frames;
-    private double currentFPS;
 
     public FrameRate() {
-        lastFrameTime = System.nanoTime();
-        frames = 0;
-        currentFPS = 0;
+        lastTime = System.nanoTime();
     }
 
     public void frameRendered() {
         frames++;
-        long currentTime = System.nanoTime();
-        long deltaTime = currentTime - lastFrameTime;
-
-        if (deltaTime >= 1_000_000_000) { // Один цикл = 1 секунда
-            currentFPS = frames / (deltaTime / 1_000_000_000.0);
-            frames = 0;
-            lastFrameTime = currentTime;
-        }
     }
 
     public double getCurrentFPS() {
-        return currentFPS;
+        long currentTime = System.nanoTime();
+        long elapsed = currentTime - lastTime;
+
+        if (elapsed > 1_000_000_000) {
+            lastTime = currentTime;
+            double fps = frames / (elapsed / 1_000_000_000.0);
+            frames = 0;
+            return fps;
+        }
+        return 0;
     }
 }

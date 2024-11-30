@@ -24,11 +24,9 @@ public class MonitoringOverlay extends JFrame {
         setBackground(new Color(0, 0, 0, 0)); // Прозрачный фон
         setOpacity(0.85f); // Полупрозрачность
 
-        // Устанавливаем размер и позицию оверлея в левом верхнем углу
-        setSize(400, 300); // Размер оверлея
-        setLocation(10, 10); // Положение окна
-
-        // Делаем оверлей "прозрачным для кликов"
+        // Устанавливаем размер и позицию оверлея
+        setSize(400, 300);
+        setLocation(10, 10);
         setLayout(null);
 
         // Метка для системной информации
@@ -46,12 +44,12 @@ public class MonitoringOverlay extends JFrame {
 
         // График FPS
         frameRateGraph = new GraphPanel("Frame Rate (FPS)", new Color(0, 255, 0, 200));
-        frameRateGraph.setBounds(10, 100, 180, 70); // Уменьшенные размеры
+        frameRateGraph.setBounds(10, 100, 180, 70);
         add(frameRateGraph);
 
         // График времени кадра
         frameTimeGraph = new GraphPanel("Frame Time (ms)", new Color(255, 0, 0, 200));
-        frameTimeGraph.setBounds(200, 100, 180, 70); // Уменьшенные размеры
+        frameTimeGraph.setBounds(200, 100, 180, 70);
         add(frameTimeGraph);
 
         // Инициализация FPS-калькулятора
@@ -79,7 +77,7 @@ public class MonitoringOverlay extends JFrame {
         timer.start();
     }
 
-    // Класс панели для графиков
+    // Внутренний класс для панели графиков
     private static class GraphPanel extends JPanel {
         private final Queue<Double> dataQueue;
         private final String label;
@@ -100,6 +98,7 @@ public class MonitoringOverlay extends JFrame {
             dataQueue.add(data);
             repaint();
         }
+
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
@@ -112,7 +111,6 @@ public class MonitoringOverlay extends JFrame {
 
             double maxValue = dataQueue.stream().mapToDouble(Double::doubleValue).max().orElse(1);
             Double[] dataArray = dataQueue.toArray(new Double[0]);
-
             for (int i = 0; i < dataArray.length; i++) {
                 int x = (i * width) / maxSize;
                 int y = height - (int) ((dataArray[i] / maxValue) * height);
@@ -123,7 +121,7 @@ public class MonitoringOverlay extends JFrame {
                 prevY = y;
             }
 
-            // Добавляем текст метки
+            // Текст с названием графика
             g2d.setColor(Color.WHITE);
             g2d.drawString(label, 10, 50);
         }
