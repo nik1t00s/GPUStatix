@@ -103,9 +103,4 @@ public class DashboardUI extends JFrame {
 
         return panel;
     }
-    public static void main(String[] args) {
-        GPUSettings gpuSettings = new GPUSettings();
-        DashboardUI dashboard = new DashboardUI(gpuSettings);
-        dashboard.setVisible(true);
-    }
 }

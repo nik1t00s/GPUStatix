@@ -34,7 +34,7 @@ public class MonitoringOverlay extends JFrame {
         // Метка для системной информации
         systemInfoLabel = new JLabel("<html>" + SysInfo.displaySystemInfo().replace("\n", "<br>") + "</html>");
         systemInfoLabel.setForeground(Color.WHITE);
-        systemInfoLabel.setBounds(10, 10, 380, 50);
+        systemInfoLabel.setBounds(10, 10, 380, 60);
         add(systemInfoLabel);
 
         // Метка для FPS
@@ -46,19 +46,19 @@ public class MonitoringOverlay extends JFrame {
 
         // График FPS
         frameRateGraph = new GraphPanel("Frame Rate (FPS)", new Color(0, 255, 0, 200));
-        frameRateGraph.setBounds(10, 100, 180, 80); // Уменьшенные размеры
+        frameRateGraph.setBounds(10, 100, 180, 70); // Уменьшенные размеры
         add(frameRateGraph);
 
         // График времени кадра
         frameTimeGraph = new GraphPanel("Frame Time (ms)", new Color(255, 0, 0, 200));
-        frameTimeGraph.setBounds(200, 100, 180, 80); // Уменьшенные размеры
+        frameTimeGraph.setBounds(200, 100, 180, 70); // Уменьшенные размеры
         add(frameTimeGraph);
 
         // Инициализация FPS-калькулятора
         frameRateCalculator = new FrameRate();
 
         // Таймер для обновления данных
-        Timer timer = new Timer(1000 / 30, new ActionListener() { // 30 FPS для уменьшения мерцания
+        Timer timer = new Timer(1000, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 frameRateCalculator.frameRendered();
@@ -77,13 +77,6 @@ public class MonitoringOverlay extends JFrame {
             }
         });
         timer.start();
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            MonitoringOverlay overlay = new MonitoringOverlay();
-            overlay.setVisible(true);
-        });
     }
 
     // Класс панели для графиков
@@ -132,7 +125,7 @@ public class MonitoringOverlay extends JFrame {
 
             // Добавляем текст метки
             g2d.setColor(Color.WHITE);
-            g2d.drawString(label, 10, 20);
+            g2d.drawString(label, 10, 50);
         }
     }
 }

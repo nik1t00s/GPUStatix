@@ -10,54 +10,25 @@ public class SysInfo {
 
     static String line;
 
-    public static Dimension getResolution() {
+    public static boolean checkIntegrated() {
         try {
-            Process process = new ProcessBuilder("neofetch", "--off").start();
+            Process process = new ProcessBuilder("lspci").start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.contains("Resolution")) {
-                    String[] parts = line.split(" ");
-                    for (String part : parts) {
-                        if (part.contains("x")) {
-                            String[] resolutionParts = part.split("x");
-                            if (resolutionParts.length == 2) {
-                                int width = Integer.parseInt(resolutionParts[0].trim());
-                                int height = Integer.parseInt(resolutionParts[1].trim());
-                                return new Dimension(width, height);
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (IOException | NumberFormatException e) {
-            e.printStackTrace();
-        }
-        // Возвращаем стандартное разрешение, если определить не удалось
-        return new Dimension(800, 600);
-    }
 
-    public static boolean checkIntegrated() {
-        String vendor = "";
-        try{
-            Process process = new ProcessBuilder("neofetch", "--off").start();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            while ((line = reader.readLine()) != null){
-                if (line.contains("GPU")) {
-                    String[] parts = line.split(" ");
-                    if (parts.length > 1) {
-                        vendor += parts[1].trim();
+            while ((line = reader.readLine()) != null) {
+                // Ищем строку с упоминанием "VGA compatible controller" или "3D controller"
+                if (line.toLowerCase().contains("vga compatible controller") || line.toLowerCase().contains("3d controller")) {
+                    // Проверяем наличие "Intel" в строке
+                    if (line.toLowerCase().contains("intel")) {
+                        return true; // Найден интегрированный графический адаптер Intel
                     }
-                    break;
                 }
-            }
-            if (vendor.equals("Intel")){
-                return true;
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        return false;
+        return false; // Нет интегрированного графического адаптера Intel
     }
 
     public static String displaySystemInfo() {
@@ -70,7 +41,7 @@ public class SysInfo {
         }
         else{
             info.append("GPU" + "    " + "\n" +
-                    "MEM " + " MB"
+                    "MEM " + " MB" + "\n"
             );
         }
         info.append(ram);
@@ -235,32 +206,38 @@ class Processor {
     }
 }
 
-class RAM{
-    String line;
-    public String getUsedRAM() throws IOException{
-        StringBuilder usedRAM = new StringBuilder();
-        try{
-            Process process = new ProcessBuilder("neofetch", "--off").start();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            while ((line = reader.readLine()) != null){
-                if (line.contains("Memory")) {
-                    String[] parts = line.split(" ");
-                    if (parts.length > 1) {
-                        usedRAM.append(parts[1].trim());
-                    }
+class RAM {
+    public String getUsedRAM() throws IOException {
+        double totalRAM = 0;
+        double freeRAM = 0;
+
+        try (BufferedReader reader = new BufferedReader(new FileReader("/proc/meminfo"))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.startsWith("MemTotal:")) {
+                    totalRAM = Double.parseDouble(line.split("\\s+")[1]);
+                } else if (line.startsWith("MemAvailable:")) {
+                    freeRAM = Double.parseDouble(line.split("\\s+")[1]);
+                }
+
+                // Если уже получили необходимую информацию, можем прервать чтение
+                if (totalRAM > 0 && freeRAM > 0) {
                     break;
                 }
             }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         }
-        return usedRAM.toString();
+
+        // Используемая RAM = Всего RAM - Доступно RAM
+        double usedRAM = totalRAM - freeRAM;
+
+        // Возвращаем значение в виде строки с указанием единиц измерения в МБ
+        return String.format("%.2f MB", usedRAM / 1024);
     }
 
     @Override
     public String toString() {
         try {
-            return "RAM" + "    " + getUsedRAM();
+            return "RAM: " + getUsedRAM();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
