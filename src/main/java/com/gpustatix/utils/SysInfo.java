@@ -211,20 +211,26 @@ class Processor {
                 for (java.io.File hwmon : hwmonDir.listFiles()) {
                     if (hwmon.isDirectory()) {
                         for (java.io.File file : hwmon.listFiles()) {
-                            if (file.getName().startsWith("in") && file.getName().endsWith("_input")) {
+                            if (file.getName().endsWith("_label")) {
                                 try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-                                    voltageMillivolts = Double.parseDouble(br.readLine().trim()) / 1000.0;
-                                    return String.format("%.2fV", voltageMillivolts);
+                                    String label = br.readLine().trim();
+                                    if (label.equalsIgnoreCase("Vcore")) { // Проверка метки
+                                        String inputFile = file.getAbsolutePath().replace("_label", "_input");
+                                        try (BufferedReader inputReader = new BufferedReader(new FileReader(inputFile))) {
+                                            voltageMillivolts = Double.parseDouble(inputReader.readLine().trim()) / 1000.0;
+                                            return String.format("CPU Voltage: %.2fV", voltageMillivolts);
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-            return "Напряжение недоступно";
+            return "CPU Voltage not available";
         } catch (Exception e) {
             e.printStackTrace();
-            return "Ошибка при получении данных";
+            return "Error reading voltage";
         }
     }
 }
