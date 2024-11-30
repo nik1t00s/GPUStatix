@@ -8,7 +8,8 @@ import javax.swing.*;
 public class Main {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            GPUSettings gpuSettings = new GPUSettings("NVIDIA", 1500, 7000, 100, 80, 50);
+            // GPUSettings теперь инициализируется без параметров, данные будут получаться через геттеры
+            GPUSettings gpuSettings = GPUSettings.getInstance();
             DashboardUI dashboard = new DashboardUI(gpuSettings);
             dashboard.setVisible(true);
         });

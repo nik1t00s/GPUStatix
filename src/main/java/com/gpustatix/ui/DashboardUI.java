@@ -102,7 +102,6 @@ public class DashboardUI extends JFrame {
                 // Игнорируем некорректный ввод
             }
         });
-
         panel.add(sliderLabel, BorderLayout.WEST);
         panel.add(slider, BorderLayout.CENTER);
         panel.add(valueField, BorderLayout.EAST);
