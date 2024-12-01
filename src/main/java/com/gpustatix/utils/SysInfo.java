@@ -32,15 +32,7 @@ public class SysInfo {
     }
 
     public static String displaySystemInfo() {
-        GPUSettings settings = GPUSettings.getInstance();
-
-        System.out.println("GPU Temperature: " + settings.getGpuTemperature() + "C");
-        System.out.println("GPU Memory Usage: " + settings.getGpuMemoryUsage() + "MiB");
-        System.out.println("GPU Utilization: " + settings.getGpuUtilization() + "%");
-        System.out.println("Core Clock: " + settings.getCoreClock() + " MHz");
-        System.out.println("Memory Clock: " + settings.getMemoryClock() + " MHz");
-        System.out.println("Power Limit: " + settings.getPowerLimit() + " W");
-        System.out.println("Fan Speed: " + settings.getFanSpeed() + " RPM");
+        GPUSettings settings = new GPUSettings();
         Processor cpu = new Processor();
         RAM ram = new RAM();
         StringBuilder info = new StringBuilder();
@@ -49,12 +41,12 @@ public class SysInfo {
             info.append("INTEGRATED\n");
         }
         else{
-            info.append("GPU" + "    " + settings.getGpuTemperature()  + "    " + settings.getGpuUtilization() + "  " + settings.getFanSpeed() + "\n" +
+            info.append("GPU" + "    " + settings.getGpuTemperature()  + "°C"+ "    " +
+                    settings.getGpuUtilization() + "%" + "\n" +
                     "MEM " + settings.getGpuMemoryUsage() + " MB" + "\n"
             );
         }
         info.append(ram);
-        // info.append(getResolution());
         return info.toString();
     }
 }
@@ -258,7 +250,7 @@ class RAM {
         double usedRAM = totalRAM - freeRAM;
 
         // Возвращаем значение в виде строки с указанием единиц измерения в МБ
-        return String.format("%.2f MB", usedRAM / 1024);
+        return Math.round((usedRAM / 1024)) + "MB";
     }
 
     @Override

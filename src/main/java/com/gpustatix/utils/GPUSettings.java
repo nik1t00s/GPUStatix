@@ -15,10 +15,10 @@ public class GPUSettings {
 
     // Добавленные поля для данных nvidia-smi
     private String gpuTemperature;
-    private String gpuMemoryUsage;
+    private int gpuMemoryUsage;
     private String gpuUtilization;
 
-    private GPUSettings() {
+    GPUSettings() {
         // Инициализация значений через утилиту nvidia-settings
     }
 
@@ -139,10 +139,10 @@ public class GPUSettings {
         return gpuTemperature;
     }
 
-    public String getGpuMemoryUsage() {
-        if (gpuMemoryUsage == null) {
-            String result = executeCommand("nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader,nounits");
-            gpuMemoryUsage = result.trim();
+    public int getGpuMemoryUsage() {
+        if (gpuMemoryUsage == 0) {
+            String result = executeCommand("nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits");
+            gpuMemoryUsage = Integer.parseInt(result.trim());
         }
         return gpuMemoryUsage;
     }
