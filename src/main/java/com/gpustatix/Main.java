@@ -9,7 +9,7 @@ public class Main {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             // GPUSettings теперь инициализируется без параметров, данные будут получаться через геттеры
-            GPUSettings gpuSettings = GPUSettings.getInstance();
+            GPUSettings gpuSettings = new GPUSettings ();
             DashboardUI dashboard = new DashboardUI(gpuSettings);
             dashboard.setVisible(true);
         });

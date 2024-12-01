@@ -14,11 +14,12 @@ public class GPUSettings {
     private int fanSpeed;
 
     // Добавленные поля для данных nvidia-smi
-    private String gpuTemperature;
+    private int gpuTemperature;
+    private String gpuName;
     private int gpuMemoryUsage;
     private String gpuUtilization;
 
-    GPUSettings() {
+    public GPUSettings() {
         // Инициализация значений через утилиту nvidia-settings
     }
 
@@ -53,6 +54,14 @@ public class GPUSettings {
             gpuVendor = result.contains("NVIDIA") ? "NVIDIA" : "Unknown";
         }
         return gpuVendor;
+    }
+
+    public String getGpuName() {
+        if (gpuName == null) {
+            String result = executeCommand("nvidia-smi --query-gpu=name --format=csv,noheader,nounits");
+            gpuName = result.trim();
+        }
+        return gpuName;
     }
 
     public int getCoreClock() {
@@ -131,10 +140,10 @@ public class GPUSettings {
 
     // Методы для извлечения данных nvidia-smi
 
-    public String getGpuTemperature() {
-        if (gpuTemperature == null) {
+    public int getGpuTemperature() {
+        if (gpuTemperature == 0) {
             String result = executeCommand("nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits");
-            gpuTemperature = result.trim();
+            gpuTemperature = Integer.parseInt(result.trim());
         }
         return gpuTemperature;
     }

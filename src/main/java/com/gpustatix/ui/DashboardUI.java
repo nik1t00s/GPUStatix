@@ -21,7 +21,7 @@ public class DashboardUI extends JFrame {
         executor = Executors.newSingleThreadExecutor();
 
         // Верхняя панель
-        JLabel gpuLabel = new JLabel("GPU: " + gpuSettings.getGpuVendor(), SwingConstants.CENTER);
+        JLabel gpuLabel = new JLabel("GPU: " + gpuSettings.getGpuName(), SwingConstants.CENTER);
         gpuLabel.setFont(new Font("Arial", Font.BOLD, 16));
         gpuLabel.setForeground(Color.WHITE);
         add(gpuLabel, BorderLayout.NORTH);
@@ -34,7 +34,7 @@ public class DashboardUI extends JFrame {
         // Добавляем статус-бары
         centerPanel.add(createStatusBar("Core Clock: ", gpuSettings.getCoreClock()));
         centerPanel.add(createStatusBar("Memory Clock: ", gpuSettings.getMemoryClock()));
-        centerPanel.add(createStatusBar("Temperature: ", 0));
+        centerPanel.add(createStatusBar("Temperature: ", gpuSettings.getGpuTemperature()));
 
         // Добавляем слайдеры
         centerPanel.add(createSlider("Core Clock", 500, 2000, gpuSettings));

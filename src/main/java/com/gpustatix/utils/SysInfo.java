@@ -11,6 +11,17 @@ public class SysInfo {
     static String line;
 
     public static boolean checkIntegrated() {
+
+        GPUSettings gpu = new GPUSettings();
+
+        String[] lineparts = gpu.getGpuName().trim().split(" ");
+
+        if (lineparts.length > 1) {
+            if (!lineparts[0].trim().equals("NVIDIA")){
+                return false;
+            }
+        }
+
         try {
             Process process = new ProcessBuilder("lspci").start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
