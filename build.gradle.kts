@@ -1,7 +1,6 @@
 plugins {
     id("java")
     id("application")
-    id("org.openjfx.javafxplugin") version "0.0.13"
     id("com.github.johnrengelman.shadow") version "8.1.1"
     kotlin("jvm") version "1.8.10"
 }
@@ -17,11 +16,7 @@ repositories {
 }
 
 dependencies {
-    implementation("org.lwjgl:lwjgl:3.3.0")
-    implementation("org.openjfx:javafx-graphics:23")
-    implementation("org.openjfx:javafx-base:23")
-    implementation("org.openjfx:javafx-controls:23")
-    implementation("org.openjfx:javafx-fxml:23")
+    implementation("org.lwjgl:lwjgl:3.3.1")
     implementation(kotlin("stdlib"))
     implementation("net.java.dev.jna:jna:5.15.0")
     implementation("org.apache.tika:tika-core:2.6.0") {
@@ -32,10 +27,6 @@ dependencies {
 
 application {
     mainClass.set("com.gpustatix.Main")
-    applicationDefaultJvmArgs = listOf(
-        "--module-path", "/Users/jabka125/Downloads/javafx-sdk-23/lib",
-        "--add-modules", "javafx.controls,javafx.fxml,javafx.graphics,javafx.base"
-    )
 }
 
 tasks.jar {
@@ -44,13 +35,6 @@ tasks.jar {
             "Main-Class" to "com.gpustatix.Main"
         )
     }
-}
-
-tasks.withType<JavaExec> {
-    jvmArgs = listOf(
-        "--module-path", "/Users/jabka125/Downloads/javafx-sdk-23/lib",
-        "--add-modules", "javafx.controls,javafx.fxml"
-    )
 }
 
 tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
@@ -66,9 +50,4 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     kotlinOptions {
         jvmTarget = "17"
     }
-}
-
-javafx {
-    version = "23"
-    modules = listOf("javafx.controls", "javafx.fxml", "javafx.graphics", "javafx.base")
 }
