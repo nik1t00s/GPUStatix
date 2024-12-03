@@ -10,14 +10,18 @@ public class SysInfo {
     static String line;
 
     public static boolean checkIntegrated() {
-
         GPUSettings gpu = new GPUSettings();
+        String gpuName = gpu.getGpuName().trim();
 
-        String[] lineparts = gpu.getGpuName().trim().split(" ");
+        if (gpuName.isEmpty()) {
+            System.out.println("GPU name is empty. Assuming integrated graphics.");
+            return true; // Если GPU не определен, предположим, что это интегрированная графика
+        }
 
+        String[] lineparts = gpuName.split(" ");
         if (lineparts.length > 1) {
-            if (!lineparts[0].trim().equals("NVIDIA")){
-                return false;
+            if (lineparts[0].trim().equalsIgnoreCase("NVIDIA")) {
+                return false; // Если это NVIDIA, значит дискретная
             }
         }
 
@@ -27,18 +31,19 @@ public class SysInfo {
             String line;
 
             while ((line = reader.readLine()) != null) {
-                // Ищем строку с упоминанием "VGA compatible controller" или "3D controller"
+                // Проверяем наличие интегрированной графики Intel
                 if (line.toLowerCase().contains("vga compatible controller") || line.toLowerCase().contains("3d controller")) {
-                    // Проверяем наличие "Intel" в строке
                     if (line.toLowerCase().contains("intel")) {
-                        return true; // Найден интегрированный графический адаптер Intel
+                        return true; // Найдена интегрированная графика Intel
                     }
                 }
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            System.err.println("Error while running lspci: " + e.getMessage());
         }
-        return false; // Нет интегрированного графического адаптера Intel
+
+        System.out.println("Integrated GPU not detected. Assuming discrete graphics.");
+        return false; // Если ничего не найдено, предполагаем дискретную
     }
 
     public static String displaySystemInfo() {

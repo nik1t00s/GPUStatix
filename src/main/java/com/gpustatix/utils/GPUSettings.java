@@ -3,24 +3,24 @@ package com.gpustatix.utils;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Arrays;
 
 public class GPUSettings {
     private static GPUSettings instance;
-    private String gpuVendor;
-    private int coreClock;
-    private int memoryClock;
-    private int powerLimit;
-    private int tempLimit;
-    private int fanSpeed;
+    private String gpuVendor = "Unknown";
+    private int coreClock = 0;
+    private int memoryClock = 0;
+    private int powerLimit = 0;
+    private int tempLimit = 0;
+    private int fanSpeed = 0;
 
-    // Добавленные поля для данных nvidia-smi
-    private int gpuTemperature;
-    private String gpuName;
-    private int gpuMemoryUsage;
-    private String gpuUtilization;
+    private int gpuTemperature = 0;
+    private String gpuName = "Unknown";
+    private int gpuMemoryUsage = 0;
+    private String gpuUtilization = "Unknown";
 
     public GPUSettings() {
-        // Инициализация значений через утилиту nvidia-settings
+        // Инициализация значений по умолчанию
     }
 
     public static GPUSettings getInstance() {
@@ -39,17 +39,31 @@ public class GPUSettings {
             while ((line = reader.readLine()) != null) {
                 output.append(line).append("\n");
             }
-            process.waitFor();
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                return ""; // Возвращаем пустую строку, если команда завершилась с ошибкой
+            }
             return output.toString().trim();
         } catch (IOException | InterruptedException e) {
+            // Логирование ошибки
+            System.err.println("Error executing command: " + command);
             e.printStackTrace();
-            return "";
+            return ""; // Возвращаем пустую строку в случае ошибки
+        }
+    }
+
+    private boolean isCommandAvailable(String command) {
+        try {
+            Process process = Runtime.getRuntime().exec(new String[]{"sh", "-c", "command -v " + command});
+            int exitCode = process.waitFor();
+            return exitCode == 0;
+        } catch (IOException | InterruptedException e) {
+            return false;
         }
     }
 
     public String getGpuVendor() {
-        if (gpuVendor == null) {
-            // Используем nvidia-settings для получения информации о видеокарте
+        if (gpuVendor.equals("Unknown") && isCommandAvailable("nvidia-settings")) {
             String result = executeCommand("nvidia-settings -q gpus | grep 'GPU' | head -n 1");
             gpuVendor = result.contains("NVIDIA") ? "NVIDIA" : "Unknown";
         }
@@ -57,15 +71,31 @@ public class GPUSettings {
     }
 
     public String getGpuName() {
-        if (gpuName == null) {
+        if (gpuName.equals("Unknown") && isCommandAvailable("nvidia-smi")) {
             String result = executeCommand("nvidia-smi --query-gpu=name --format=csv,noheader,nounits");
-            gpuName = result.trim();
+            gpuName = result.isEmpty() ? "Unknown" : result.trim();
+        }
+        if (gpuName.equals("Unknown") && isCommandAvailable("glxinfo")){
+            String result = executeCommand("glxinfo");
+            if (!result.isEmpty()) {
+                String[] lines = result.split("\n");
+                for (String line : lines) {
+                    // Ищем строку с названием GPU
+                    if (line.toLowerCase().contains("device:") || line.toLowerCase().contains("renderer string:")) {
+                        String[] parts = line.split(":");
+                        if (parts.length > 1) {
+                            return parts[1].trim();
+                        }
+                    }
+                }
+            }
+            gpuName = "Unknown";
         }
         return gpuName;
     }
 
     public int getCoreClock() {
-        if (coreClock == 0) {
+        if (coreClock == 0 && isCommandAvailable("nvidia-settings")) {
             String result = executeCommand("nvidia-settings -q [gpu:0]/GPUCoreClockFreq");
             try {
                 String[] parts = result.split(":");
@@ -73,14 +103,14 @@ public class GPUSettings {
                     coreClock = Integer.parseInt(parts[1].trim().replace(" MHz", ""));
                 }
             } catch (NumberFormatException e) {
-                e.printStackTrace();
+                System.err.println("Error parsing core clock");
             }
         }
         return coreClock;
     }
 
     public int getMemoryClock() {
-        if (memoryClock == 0) {
+        if (memoryClock == 0 && isCommandAvailable("nvidia-settings")) {
             String result = executeCommand("nvidia-settings -q [gpu:0]/GPUMemoryTransferRate");
             try {
                 String[] parts = result.split(":");
@@ -88,14 +118,14 @@ public class GPUSettings {
                     memoryClock = Integer.parseInt(parts[1].trim().replace(" MHz", ""));
                 }
             } catch (NumberFormatException e) {
-                e.printStackTrace();
+                System.err.println("Error parsing memory clock");
             }
         }
         return memoryClock;
     }
 
     public int getPowerLimit() {
-        if (powerLimit == 0) {
+        if (powerLimit == 0 && isCommandAvailable("nvidia-settings")) {
             String result = executeCommand("nvidia-settings -q [gpu:0]/GPUCurrentPowerLimit");
             try {
                 String[] parts = result.split(":");
@@ -103,14 +133,14 @@ public class GPUSettings {
                     powerLimit = Integer.parseInt(parts[1].trim().replace(" W", ""));
                 }
             } catch (NumberFormatException e) {
-                e.printStackTrace();
+                System.err.println("Error parsing power limit");
             }
         }
         return powerLimit;
     }
 
     public int getTempLimit() {
-        if (tempLimit == 0) {
+        if (tempLimit == 0 && isCommandAvailable("nvidia-settings")) {
             String result = executeCommand("nvidia-settings -q [gpu:0]/GPUGraphicsTemp");
             try {
                 String[] parts = result.split(":");
@@ -118,13 +148,14 @@ public class GPUSettings {
                     tempLimit = Integer.parseInt(parts[1].trim().replace(" C", ""));
                 }
             } catch (NumberFormatException e) {
-                e.printStackTrace();
+                System.err.println("Error parsing temperature limit");
             }
         }
         return tempLimit;
     }
+
     public int getFanSpeed() {
-        if (fanSpeed == 0) {
+        if (fanSpeed == 0 && isCommandAvailable("nvidia-settings")) {
             String result = executeCommand("nvidia-settings -q [gpu:0]/GPUFanSpeed");
             try {
                 String[] parts = result.split(":");
@@ -132,46 +163,56 @@ public class GPUSettings {
                     fanSpeed = Integer.parseInt(parts[1].trim().replace(" RPM", ""));
                 }
             } catch (NumberFormatException e) {
-                e.printStackTrace();
+                System.err.println("Error parsing fan speed");
             }
         }
         return fanSpeed;
     }
 
-    // Методы для извлечения данных nvidia-smi
-
     public int getGpuTemperature() {
-        if (gpuTemperature == 0) {
+        if (gpuTemperature == 0 && isCommandAvailable("nvidia-smi")) {
             String result = executeCommand("nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits");
-            gpuTemperature = Integer.parseInt(result.trim());
+            gpuTemperature = result.isEmpty() ? 0 : Integer.parseInt(result.trim());
         }
         return gpuTemperature;
     }
 
     public int getGpuMemoryUsage() {
-        if (gpuMemoryUsage == 0) {
+        if (gpuMemoryUsage == 0 && isCommandAvailable("nvidia-smi")) {
             String result = executeCommand("nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits");
-            gpuMemoryUsage = Integer.parseInt(result.trim());
+            gpuMemoryUsage = result.isEmpty() ? 0 : Integer.parseInt(result.trim());
         }
         return gpuMemoryUsage;
     }
 
     public String getGpuUtilization() {
-        if (gpuUtilization == null) {
+        if (gpuUtilization.equals("Unknown") && isCommandAvailable("nvidia-smi")) {
             String result = executeCommand("nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits");
-            gpuUtilization = result.trim();
+            gpuUtilization = result.isEmpty() ? "Unknown" : result.trim();
         }
         return gpuUtilization;
     }
 
-    // Метод для обновления настроек GPU
     public void updateSetting(String setting, int value) {
         switch (setting) {
-            case "Core Clock" -> coreClock = value;
-            case "Memory Clock" -> memoryClock = value;
-            case "Power Limit" -> powerLimit = value;
-            case "Temp Limit" -> tempLimit = value;
-            case "Fan Speed" -> fanSpeed = value;
+            case "Core Clock":
+                coreClock = value;
+                break;
+            case "Memory Clock":
+                memoryClock = value;
+                break;
+            case "Power Limit":
+                powerLimit = value;
+                break;
+            case "Temp Limit":
+                tempLimit = value;
+                break;
+            case "Fan Speed":
+                fanSpeed = value;
+                break;
+            default:
+                System.err.println("Unknown setting: " + setting);
+                break;
         }
     }
 }
