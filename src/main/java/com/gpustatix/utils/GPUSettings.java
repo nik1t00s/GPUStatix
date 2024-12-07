@@ -26,8 +26,12 @@ public class GPUSettings {
         try {
             NVML.INSTANCE.nvmlInit();
             PointerByReference deviceRef = new PointerByReference();
-            NVML.INSTANCE.nvmlDeviceGetHandleByIndex(0, deviceRef);
-            device = deviceRef.getValue();
+            int result = NVML.INSTANCE.nvmlDeviceGetHandleByIndex(0, deviceRef);
+            if (result == NVML.NVML_SUCCESS) {
+                device = deviceRef.getValue();
+            } else {
+                System.err.println("Failed to get NVML device handle. Error code: " + result);
+            }
         } catch (Exception e) {
             System.err.println("Failed to initialize NVML: " + e.getMessage());
         }
@@ -220,7 +224,7 @@ public class GPUSettings {
 }
 
 interface NVML extends Library {
-    NVML INSTANCE = Native.load("nvidia-ml", NVML.class);
+    NVML INSTANCE = Native.load("libnvidia-ml", NVML.class);
 
     int NVML_SUCCESS = 0;
     int NVML_TEMPERATURE_GPU = 0;

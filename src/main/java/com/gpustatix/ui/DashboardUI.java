@@ -20,7 +20,7 @@ public class DashboardUI extends JFrame {
 
         executor = Executors.newSingleThreadExecutor();
 
-        // Верхняя панель
+        // Верхняя панель с названием видеокарты
         JLabel gpuLabel = new JLabel("GPU: " + gpuSettings.getGpuName(), SwingConstants.CENTER);
         gpuLabel.setFont(new Font("Arial", Font.BOLD, 16));
         gpuLabel.setForeground(Color.WHITE);
@@ -31,12 +31,12 @@ public class DashboardUI extends JFrame {
         centerPanel.setLayout(new GridLayout(8, 1));
         centerPanel.setBackground(Color.BLACK);
 
-        // Добавляем статус-бары
+        // Добавляем статус-бары для текущего состояния GPU
         centerPanel.add(createStatusBar("Core Clock: ", gpuSettings.getCoreClock()));
         centerPanel.add(createStatusBar("Memory Clock: ", gpuSettings.getMemoryClock()));
         centerPanel.add(createStatusBar("Temperature: ", gpuSettings.getGpuTemperature()));
 
-        // Добавляем слайдеры
+        // Добавляем слайдеры для управления параметрами
         centerPanel.add(createSlider("Core Clock", 500, 2000, gpuSettings));
         centerPanel.add(createSlider("Memory Clock", 1000, 8000, gpuSettings));
         centerPanel.add(createSlider("Power Limit", 50, 150, gpuSettings));
@@ -45,13 +45,15 @@ public class DashboardUI extends JFrame {
 
         add(centerPanel, BorderLayout.CENTER);
 
-        // Нижняя панель
+        // Нижняя панель с кнопками
         JPanel buttonPanel = new JPanel();
         buttonPanel.setBackground(Color.BLACK);
 
+        // Кнопка для вызова оверлея
         JButton toggleOverlayButton = new JButton("Toggle Overlay");
         toggleOverlayButton.addActionListener(e -> toggleOverlay());
 
+        // Добавляем кнопку на панель
         buttonPanel.add(toggleOverlayButton);
         add(buttonPanel, BorderLayout.SOUTH);
 
@@ -59,6 +61,12 @@ public class DashboardUI extends JFrame {
         getContentPane().setBackground(Color.BLACK);
     }
 
+    /**
+     * Метод для создания статус-бара (например, для отображения температуры)
+     * @param label текст статуса
+     * @param value начальное значение
+     * @return панель со статус-баром
+     */
     private JPanel createStatusBar(String label, int value) {
         JPanel panel = new JPanel(new BorderLayout());
         JLabel statusLabel = new JLabel(label);
@@ -74,6 +82,14 @@ public class DashboardUI extends JFrame {
         return panel;
     }
 
+    /**
+     * Метод для создания слайдера с текстовым полем
+     * @param label название параметра
+     * @param min минимальное значение
+     * @param max максимальное значение
+     * @param gpuSettings настройки GPU
+     * @return панель со слайдером и текстовым полем
+     */
     private JPanel createSlider(String label, int min, int max, GPUSettings gpuSettings) {
         JPanel panel = new JPanel(new BorderLayout());
         JLabel sliderLabel = new JLabel(label);
@@ -92,7 +108,10 @@ public class DashboardUI extends JFrame {
 
         JSlider slider = new JSlider(min, max, initialValue);
         slider.setBackground(Color.BLACK);
-        slider.addChangeListener(e -> gpuSettings.updateSetting(label, slider.getValue()));
+        slider.addChangeListener(e -> {
+            int value = slider.getValue();
+            gpuSettings.updateSetting(label, value);
+        });
 
         JTextField valueField = new JTextField(String.valueOf(initialValue), 4);
         valueField.addActionListener(e -> {
@@ -114,6 +133,9 @@ public class DashboardUI extends JFrame {
         return panel;
     }
 
+    /**
+     * Метод для управления окном оверлея
+     */
     private void toggleOverlay() {
         if (overlay == null || !overlay.isVisible()) {
             executor.submit(() -> {
