@@ -15,7 +15,7 @@ public class DashboardUI extends JFrame {
         setTitle("GPUStatix Dashboard");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(400, 600);
-        setResizable(false); // Отключаем возможность развернуть
+        setResizable(false);
         setLayout(new BorderLayout());
 
         executor = Executors.newSingleThreadExecutor();
@@ -79,13 +79,16 @@ public class DashboardUI extends JFrame {
         JLabel sliderLabel = new JLabel(label);
         sliderLabel.setForeground(Color.WHITE);
 
-        // Получаем значение, проверяем его и корректируем при необходимости
-        int initialValue = gpuSettings.getCoreClock();
-        if (initialValue < min) {
-            initialValue = min;
-        } else if (initialValue > max) {
-            initialValue = max;
-        }
+        int initialValue = switch (label) {
+            case "Core Clock" -> gpuSettings.getCoreClock();
+            case "Memory Clock" -> gpuSettings.getMemoryClock();
+            case "Power Limit" -> gpuSettings.getPowerLimit();
+            case "Temp Limit" -> gpuSettings.getTempLimit();
+            case "Fan Speed" -> gpuSettings.getFanSpeed();
+            default -> min;
+        };
+
+        initialValue = Math.max(min, Math.min(max, initialValue));
 
         JSlider slider = new JSlider(min, max, initialValue);
         slider.setBackground(Color.BLACK);
@@ -95,13 +98,14 @@ public class DashboardUI extends JFrame {
         valueField.addActionListener(e -> {
             try {
                 int value = Integer.parseInt(valueField.getText());
-                if (value < min) value = min;
-                if (value > max) value = max;
+                value = Math.max(min, Math.min(max, value));
                 slider.setValue(value);
+                gpuSettings.updateSetting(label, value);
             } catch (NumberFormatException ex) {
-                // Игнорируем некорректный ввод
+                System.err.println("Invalid input for " + label);
             }
         });
+
         panel.add(sliderLabel, BorderLayout.WEST);
         panel.add(slider, BorderLayout.CENTER);
         panel.add(valueField, BorderLayout.EAST);

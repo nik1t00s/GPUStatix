@@ -1,9 +1,11 @@
 package com.gpustatix.utils;
 
+import com.sun.jna.*;
+import com.sun.jna.ptr.*;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Arrays;
 
 public class GPUSettings {
     private static GPUSettings instance;
@@ -18,9 +20,17 @@ public class GPUSettings {
     private String gpuName = "Unknown";
     private int gpuMemoryUsage = 0;
     private String gpuUtilization = "Unknown";
+    private Pointer device;
 
     public GPUSettings() {
-        // Инициализация значений по умолчанию
+        try {
+            NVML.INSTANCE.nvmlInit();
+            PointerByReference deviceRef = new PointerByReference();
+            NVML.INSTANCE.nvmlDeviceGetHandleByIndex(0, deviceRef);
+            device = deviceRef.getValue();
+        } catch (Exception e) {
+            System.err.println("Failed to initialize NVML: " + e.getMessage());
+        }
     }
 
     public static GPUSettings getInstance() {
@@ -94,51 +104,6 @@ public class GPUSettings {
         return gpuName;
     }
 
-    public int getCoreClock() {
-        if (coreClock == 0 && isCommandAvailable("nvidia-settings")) {
-            String result = executeCommand("nvidia-settings -q [gpu:0]/GPUCoreClockFreq");
-            try {
-                String[] parts = result.split(":");
-                if (parts.length > 1) {
-                    coreClock = Integer.parseInt(parts[1].trim().replace(" MHz", ""));
-                }
-            } catch (NumberFormatException e) {
-                System.err.println("Error parsing core clock");
-            }
-        }
-        return coreClock;
-    }
-
-    public int getMemoryClock() {
-        if (memoryClock == 0 && isCommandAvailable("nvidia-settings")) {
-            String result = executeCommand("nvidia-settings -q [gpu:0]/GPUMemoryTransferRate");
-            try {
-                String[] parts = result.split(":");
-                if (parts.length > 1) {
-                    memoryClock = Integer.parseInt(parts[1].trim().replace(" MHz", ""));
-                }
-            } catch (NumberFormatException e) {
-                System.err.println("Error parsing memory clock");
-            }
-        }
-        return memoryClock;
-    }
-
-    public int getPowerLimit() {
-        if (powerLimit == 0 && isCommandAvailable("nvidia-settings")) {
-            String result = executeCommand("nvidia-settings -q [gpu:0]/GPUCurrentPowerLimit");
-            try {
-                String[] parts = result.split(":");
-                if (parts.length > 1) {
-                    powerLimit = Integer.parseInt(parts[1].trim().replace(" W", ""));
-                }
-            } catch (NumberFormatException e) {
-                System.err.println("Error parsing power limit");
-            }
-        }
-        return powerLimit;
-    }
-
     public int getTempLimit() {
         if (tempLimit == 0 && isCommandAvailable("nvidia-settings")) {
             String result = executeCommand("nvidia-settings -q [gpu:0]/GPUGraphicsTemp");
@@ -152,21 +117,6 @@ public class GPUSettings {
             }
         }
         return tempLimit;
-    }
-
-    public int getFanSpeed() {
-        if (fanSpeed == 0 && isCommandAvailable("nvidia-settings")) {
-            String result = executeCommand("nvidia-settings -q [gpu:0]/GPUFanSpeed");
-            try {
-                String[] parts = result.split(":");
-                if (parts.length > 1) {
-                    fanSpeed = Integer.parseInt(parts[1].trim().replace(" RPM", ""));
-                }
-            } catch (NumberFormatException e) {
-                System.err.println("Error parsing fan speed");
-            }
-        }
-        return fanSpeed;
     }
 
     public int getGpuTemperature() {
@@ -193,6 +143,58 @@ public class GPUSettings {
         return gpuUtilization;
     }
 
+    public int getCoreClock() {
+        try {
+            IntByReference clockRef = new IntByReference();
+            NVML.INSTANCE.nvmlDeviceGetClock(device, NVML.NVML_CLOCK_GRAPHICS, NVML.NVML_CLOCK_ID_CURRENT, clockRef);
+            coreClock = clockRef.getValue();
+        } catch (Exception e) {
+            System.err.println("Failed to get core clock: " + e.getMessage());
+        }
+        return coreClock;
+    }
+
+    public int getMemoryClock() {
+        try {
+            IntByReference clockRef = new IntByReference();
+            NVML.INSTANCE.nvmlDeviceGetClock(device, NVML.NVML_CLOCK_MEM, NVML.NVML_CLOCK_ID_CURRENT, clockRef);
+            memoryClock = clockRef.getValue();
+        } catch (Exception e) {
+            System.err.println("Failed to get memory clock: " + e.getMessage());
+        }
+        return memoryClock;
+    }
+
+    public int getPowerLimit() {
+        try {
+            IntByReference powerRef = new IntByReference();
+            NVML.INSTANCE.nvmlDeviceGetPowerManagementLimit(device, powerRef);
+            powerLimit = powerRef.getValue() / 1000; // Ватты
+        } catch (Exception e) {
+            System.err.println("Failed to get power limit: " + e.getMessage());
+        }
+        return powerLimit;
+    }
+
+    public int getFanSpeed() {
+        try {
+            IntByReference fanSpeedRef = new IntByReference();
+            NVML.INSTANCE.nvmlDeviceGetFanSpeed(device, fanSpeedRef);
+            fanSpeed = fanSpeedRef.getValue();
+        } catch (Exception e) {
+            System.err.println("Failed to get fan speed: " + e.getMessage());
+        }
+        return fanSpeed;
+    }
+
+    public void shutdown() {
+        try {
+            NVML.INSTANCE.nvmlShutdown();
+        } catch (Exception e) {
+            System.err.println("Failed to shutdown NVML: " + e.getMessage());
+        }
+    }
+
     public void updateSetting(String setting, int value) {
         switch (setting) {
             case "Core Clock":
@@ -215,4 +217,31 @@ public class GPUSettings {
                 break;
         }
     }
+}
+
+interface NVML extends Library {
+    NVML INSTANCE = Native.load("nvidia-ml", NVML.class);
+
+    int NVML_SUCCESS = 0;
+    int NVML_TEMPERATURE_GPU = 0;
+    int NVML_CLOCK_GRAPHICS = 0;
+    int NVML_CLOCK_MEM = 1;
+    int NVML_CLOCK_ID_CURRENT = 0;
+    int NVML_DEVICE_NAME_BUFFER_SIZE = 64;
+
+    int nvmlInit();
+
+    int nvmlShutdown();
+
+    int nvmlDeviceGetHandleByIndex(int index, PointerByReference device);
+
+    int nvmlDeviceGetName(Pointer device, byte[] name, int length);
+
+    int nvmlDeviceGetTemperature(Pointer device, int sensorType, IntByReference temp);
+
+    int nvmlDeviceGetClock(Pointer device, int clockType, int clockId, IntByReference clock);
+
+    int nvmlDeviceGetPowerManagementLimit(Pointer device, IntByReference power);
+
+    int nvmlDeviceGetFanSpeed(Pointer device, IntByReference fanSpeed);
 }
