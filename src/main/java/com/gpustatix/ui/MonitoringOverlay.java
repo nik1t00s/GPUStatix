@@ -11,11 +11,11 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 public class MonitoringOverlay extends JFrame {
-    private final GraphPanel frameRateGraph;
-    private final GraphPanel frameTimeGraph;
+    // private final GraphPanel frameRateGraph;
+    // private final GraphPanel frameTimeGraph;
     private final JLabel systemInfoLabel;
-    private final JLabel fpsLabel;
-    private final FrameRate frameRateCalculator;
+    // private final JLabel fpsLabel;
+    // private final FrameRate frameRateCalculator;
 
     public MonitoringOverlay() {
         setTitle("Framerate and Frametime Overlay");
@@ -25,7 +25,7 @@ public class MonitoringOverlay extends JFrame {
         setOpacity(0.85f); // Полупрозрачность
 
         // Устанавливаем размер и позицию оверлея
-        setSize(400, 300);
+        setSize(400, 90);
         setLocation(10, 10);
         setLayout(null);
 
@@ -36,39 +36,39 @@ public class MonitoringOverlay extends JFrame {
         add(systemInfoLabel);
 
         // Метка для FPS
-        fpsLabel = new JLabel("FPS: 0");
-        fpsLabel.setForeground(Color.GREEN);
-        fpsLabel.setFont(new Font("Arial", Font.BOLD, 16));
-        fpsLabel.setBounds(10, 70, 100, 20);
-        add(fpsLabel);
+        //fpsLabel = new JLabel("FPS: 0");
+        //fpsLabel.setForeground(Color.GREEN);
+        //fpsLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        //fpsLabel.setBounds(10, 70, 100, 20);
+        //add(fpsLabel);
 
         // График FPS
-        frameRateGraph = new GraphPanel("Frame Rate (FPS)", new Color(0, 255, 0, 200));
-        frameRateGraph.setBounds(10, 100, 180, 70);
-        add(frameRateGraph);
+        // frameRateGraph = new GraphPanel("Frame Rate (FPS)", new Color(0, 255, 0, 200));
+        // frameRateGraph.setBounds(10, 100, 180, 70);
+        // add(frameRateGraph);
 
         // График времени кадра
-        frameTimeGraph = new GraphPanel("Frame Time (ms)", new Color(255, 0, 0, 200));
-        frameTimeGraph.setBounds(200, 100, 180, 70);
-        add(frameTimeGraph);
+        // frameTimeGraph = new GraphPanel("Frame Time (ms)", new Color(255, 0, 0, 200));
+        // frameTimeGraph.setBounds(200, 100, 180, 70);
+        // add(frameTimeGraph);
 
         // Инициализация FPS-калькулятора
-        frameRateCalculator = new FrameRate();
+        // frameRateCalculator = new FrameRate();
 
         // Таймер для обновления данных
         Timer timer = new Timer(1000, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                frameRateCalculator.frameRendered();
+                // frameRateCalculator.frameRendered();
 
                 // Обновляем FPS
-                double fps = frameRateCalculator.getCurrentFPS();
-                fpsLabel.setText(String.format("FPS: %.2f", fps));
+                // double fps = frameRateCalculator.getCurrentFPS();
+                // fpsLabel.setText(String.format("FPS: %.2f", fps));
 
                 // Обновляем графики
-                double frameTime = (fps > 0) ? 1000.0 / fps : 0;
-                frameRateGraph.addGraphData(fps);
-                frameTimeGraph.addGraphData(frameTime);
+                // double frameTime = (fps > 0) ? 1000.0 / fps : 0;
+                // frameRateGraph.addGraphData(fps);
+                // frameTimeGraph.addGraphData(frameTime);
 
                 // Обновляем системную информацию
                 systemInfoLabel.setText("<html>" + SysInfo.displaySystemInfo().replace("\n", "<br>") + "</html>");

@@ -8,13 +8,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class DashboardUI extends JFrame {
+    private final GPUSettings gpuSettings;
     private MonitoringOverlay overlay;
     private final ExecutorService executor;
 
     public DashboardUI(GPUSettings gpuSettings) {
-        setTitle("GPUStatix Dashboard");
+        this.gpuSettings = gpuSettings;
+
+        setTitle("GPUStatix");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(400, 600);
+        setSize(400, 300);
         setResizable(false);
         setLayout(new BorderLayout());
 
@@ -28,32 +31,24 @@ public class DashboardUI extends JFrame {
 
         // Центральная панель
         JPanel centerPanel = new JPanel();
-        centerPanel.setLayout(new GridLayout(8, 1));
+        centerPanel.setLayout(new GridLayout(5, 1)); // 8 строк для параметров
         centerPanel.setBackground(Color.BLACK);
 
-        // Добавляем статус-бары для текущего состояния GPU
-        centerPanel.add(createStatusBar("Core Clock: ", gpuSettings.getCoreClock()));
-        centerPanel.add(createStatusBar("Memory Clock: ", gpuSettings.getMemoryClock()));
-        centerPanel.add(createStatusBar("Temperature: ", gpuSettings.getGpuTemperature()));
-
-        // Добавляем слайдеры для управления параметрами
-        centerPanel.add(createSlider("Core Clock", 500, 2000, gpuSettings));
-        centerPanel.add(createSlider("Memory Clock", 1000, 8000, gpuSettings));
-        centerPanel.add(createSlider("Power Limit", 50, 150, gpuSettings));
-        centerPanel.add(createSlider("Temp Limit", 50, 100, gpuSettings));
-        centerPanel.add(createSlider("Fan Speed", 0, 100, gpuSettings));
+        // Добавляем поля для ввода значений и отображения текущих значений
+        centerPanel.add(createValueField("Core Clock", gpuSettings.getCoreClock(), 500, 2000));
+        centerPanel.add(createValueField("Memory Clock", gpuSettings.getMemoryClock(), 1000, 8000));
+        centerPanel.add(createValueField("Power Limit", gpuSettings.getPowerLimit(), 50, 150));
+        centerPanel.add(createValueField("Temp Limit", gpuSettings.getTempLimit(), 50, 100));
+        centerPanel.add(createValueField("Fan Speed", gpuSettings.getFanSpeed(), 0, 100));
 
         add(centerPanel, BorderLayout.CENTER);
 
-        // Нижняя панель с кнопками
+        // Нижняя панель с кнопкой для отображения оверлея
         JPanel buttonPanel = new JPanel();
         buttonPanel.setBackground(Color.BLACK);
 
-        // Кнопка для вызова оверлея
         JButton toggleOverlayButton = new JButton("Toggle Overlay");
         toggleOverlayButton.addActionListener(e -> toggleOverlay());
-
-        // Добавляем кнопку на панель
         buttonPanel.add(toggleOverlayButton);
         add(buttonPanel, BorderLayout.SOUTH);
 
@@ -62,80 +57,48 @@ public class DashboardUI extends JFrame {
     }
 
     /**
-     * Метод для создания статус-бара (например, для отображения температуры)
-     * @param label текст статуса
-     * @param value начальное значение
-     * @return панель со статус-баром
+     * Создаёт панель с меткой и текстовым полем для отображения и ввода значений
+     *
+     * @param label Название параметра
+     * @param initialValue Начальное значение
+     * @param min Минимальное значение (для валидации)
+     * @param max Максимальное значение (для валидации)
+     * @return панель с меткой и текстовым полем
      */
-    private JPanel createStatusBar(String label, int value) {
+    private JPanel createValueField(String label, int initialValue, int min, int max) {
         JPanel panel = new JPanel(new BorderLayout());
-        JLabel statusLabel = new JLabel(label);
-        statusLabel.setForeground(Color.WHITE);
-        JProgressBar progressBar = new JProgressBar(0, 100);
-        progressBar.setValue(value);
-        progressBar.setStringPainted(true);
+        JLabel nameLabel = new JLabel(label + ": ");
+        nameLabel.setForeground(Color.WHITE);
 
-        panel.setBackground(Color.BLACK);
-        panel.add(statusLabel, BorderLayout.WEST);
-        panel.add(progressBar, BorderLayout.CENTER);
+        // Поле с текущим значением
+        JLabel currentValueLabel = new JLabel(String.valueOf(initialValue));
+        currentValueLabel.setForeground(Color.GREEN);
 
-        return panel;
-    }
+        // Поле ввода для изменения значения
+        JTextField inputField = new JTextField(4);
+        inputField.setText(String.valueOf(initialValue));
 
-    /**
-     * Метод для создания слайдера с текстовым полем
-     * @param label название параметра
-     * @param min минимальное значение
-     * @param max максимальное значение
-     * @param gpuSettings настройки GPU
-     * @return панель со слайдером и текстовым полем
-     */
-    private JPanel createSlider(String label, int min, int max, GPUSettings gpuSettings) {
-        JPanel panel = new JPanel(new BorderLayout());
-        JLabel sliderLabel = new JLabel(label);
-        sliderLabel.setForeground(Color.WHITE);
-
-        int initialValue = switch (label) {
-            case "Core Clock" -> gpuSettings.getCoreClock();
-            case "Memory Clock" -> gpuSettings.getMemoryClock();
-            case "Power Limit" -> gpuSettings.getPowerLimit();
-            case "Temp Limit" -> gpuSettings.getTempLimit();
-            case "Fan Speed" -> gpuSettings.getFanSpeed();
-            default -> min;
-        };
-
-        initialValue = Math.max(min, Math.min(max, initialValue));
-
-        JSlider slider = new JSlider(min, max, initialValue);
-        slider.setBackground(Color.BLACK);
-        slider.addChangeListener(e -> {
-            int value = slider.getValue();
-            gpuSettings.updateSetting(label, value);
-        });
-
-        JTextField valueField = new JTextField(String.valueOf(initialValue), 4);
-        valueField.addActionListener(e -> {
+        inputField.addActionListener(e -> {
             try {
-                int value = Integer.parseInt(valueField.getText());
-                value = Math.max(min, Math.min(max, value));
-                slider.setValue(value);
-                gpuSettings.updateSetting(label, value);
+                int newValue = Integer.parseInt(inputField.getText());
+                if (newValue < min || newValue > max) {
+                    JOptionPane.showMessageDialog(this, "Value must be between " + min + " and " + max);
+                } else {
+                    currentValueLabel.setText(String.valueOf(newValue));
+                    gpuSettings.updateSetting(label, newValue);
+                }
             } catch (NumberFormatException ex) {
-                System.err.println("Invalid input for " + label);
+                JOptionPane.showMessageDialog(this, "Invalid input. Please enter a number.");
             }
         });
-
-        panel.add(sliderLabel, BorderLayout.WEST);
-        panel.add(slider, BorderLayout.CENTER);
-        panel.add(valueField, BorderLayout.EAST);
         panel.setBackground(Color.BLACK);
+        panel.add(nameLabel, BorderLayout.WEST);
+        panel.add(currentValueLabel, BorderLayout.CENTER);
+        panel.add(inputField, BorderLayout.EAST);
 
         return panel;
     }
 
-    /**
-     * Метод для управления окном оверлея
-     */
     private void toggleOverlay() {
         if (overlay == null || !overlay.isVisible()) {
             executor.submit(() -> {

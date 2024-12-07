@@ -201,24 +201,15 @@ public class GPUSettings {
 
     public void updateSetting(String setting, int value) {
         switch (setting) {
-            case "Core Clock":
-                coreClock = value;
-                break;
-            case "Memory Clock":
-                memoryClock = value;
-                break;
-            case "Power Limit":
-                powerLimit = value;
-                break;
-            case "Temp Limit":
-                tempLimit = value;
-                break;
-            case "Fan Speed":
-                fanSpeed = value;
-                break;
-            default:
-                System.err.println("Unknown setting: " + setting);
-                break;
+            case "Core Clock" -> coreClock = value;
+            case "Memory Clock" -> memoryClock = value;
+            case "Power Limit" -> powerLimit = value;
+            case "Temp Limit" -> tempLimit = value;
+            case "Fan Speed" -> fanSpeed = value;
+            case "GPU Temperature" -> gpuTemperature = value;
+            case "GPU Memory Usage" -> gpuMemoryUsage = value;
+            case "GPU Utilization" -> gpuUtilization = value + "%";
+            default -> System.err.println("Unknown setting: " + setting);
         }
     }
 }
