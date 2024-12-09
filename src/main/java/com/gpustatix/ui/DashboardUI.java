@@ -37,7 +37,7 @@ public class DashboardUI extends JFrame {
         // Добавляем поля для ввода значений и отображения текущих значений
         centerPanel.add(createValueField("Core Clock", gpuSettings.getCoreClock(), 500, 2000));
         centerPanel.add(createValueField("Memory Clock", gpuSettings.getMemoryClock(), 1000, 8000));
-        centerPanel.add(createValueField("Power Limit", gpuSettings.getPowerLimit(), 50, 150));
+        centerPanel.add(createValueField("Power Limit", gpuSettings.getPowerLimit(), 50, 215));
         centerPanel.add(createValueField("Temp Limit", gpuSettings.getTempLimit(), 50, 100));
         centerPanel.add(createValueField("Fan Speed", gpuSettings.getFanSpeed(), 0, 100));
 
@@ -85,12 +85,13 @@ public class DashboardUI extends JFrame {
                     JOptionPane.showMessageDialog(this, "Value must be between " + min + " and " + max);
                 } else {
                     currentValueLabel.setText(String.valueOf(newValue));
-                    gpuSettings.updateSetting(label, newValue);
+                    updateGpuSetting(label, newValue); // Обновляем значение через GPUSettings
                 }
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(this, "Invalid input. Please enter a number.");
             }
         });
+
         panel.setBackground(Color.BLACK);
         panel.add(nameLabel, BorderLayout.WEST);
         panel.add(currentValueLabel, BorderLayout.CENTER);
@@ -98,6 +99,19 @@ public class DashboardUI extends JFrame {
 
         return panel;
     }
+
+
+    private void updateGpuSetting(String label, int value) {
+        switch (label) {
+            case "Core Clock" -> gpuSettings.setCoreClockNVML(value);
+            case "Memory Clock" -> gpuSettings.setMemoryClockNVML(value);
+            case "Power Limit" -> gpuSettings.setPowerLimitNVML(value);
+            case "Fan Speed" -> gpuSettings.setFanSpeed(value);
+            case "Temp Limit" -> gpuSettings.updateSetting(label, value); // Обновление в GPUSettings для Temp Limit
+            default -> System.err.println("Unsupported setting: " + label);
+        }
+    }
+
 
     private void toggleOverlay() {
         if (overlay == null || !overlay.isVisible()) {

@@ -9,6 +9,9 @@ repositories {
     mavenCentral()
     maven("https://jcenter.bintray.com/")
     mavenLocal()
+    maven {
+        url = uri("https://maven.maxhenkel.de/repository/public")
+    }
     maven("https://mvnrepository.com/")
     maven("https://github.com/")
     maven("https://jitpack.io")
@@ -50,4 +53,8 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     kotlinOptions {
         jvmTarget = "17"
     }
+}
+
+tasks.withType<JavaCompile> {
+    options.compilerArgs.add("-Xlint:deprecation")
 }

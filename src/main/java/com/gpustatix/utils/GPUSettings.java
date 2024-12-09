@@ -46,7 +46,8 @@ public class GPUSettings {
 
     private String executeCommand(String command) {
         try {
-            Process process = Runtime.getRuntime().exec(command);
+            ProcessBuilder builder = new ProcessBuilder(command.split(" "));
+            Process process = builder.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             StringBuilder output = new StringBuilder();
             String line;
@@ -199,6 +200,93 @@ public class GPUSettings {
         }
     }
 
+    public void setCoreClockNVML(int value) {
+        try {
+            int result = NVML.INSTANCE.nvmlDeviceSetApplicationsClocks(device, NVML.NVML_CLOCK_GRAPHICS, value);
+            if (result != NVML.NVML_SUCCESS) {
+                System.err.println("Failed to set core clock via NVML. Error code: " + result);
+            } else {
+                coreClock = value;
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to set core clock via NVML: " + e.getMessage());
+        }
+    }
+
+    public void setMemoryClockNVML(int value) {
+        try {
+            int result = NVML.INSTANCE.nvmlDeviceSetApplicationsClocks(device, NVML.NVML_CLOCK_MEM, value);
+            if (result != NVML.NVML_SUCCESS) {
+                System.err.println("Failed to set memory clock via NVML. Error code: " + result);
+            } else {
+                memoryClock = value;
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to set memory clock via NVML: " + e.getMessage());
+        }
+    }
+
+    public void setPowerLimitNVML(int value) {
+        try {
+            int result = NVML.INSTANCE.nvmlDeviceSetPowerManagementLimit(device, value * 1000);
+            if (result != NVML.NVML_SUCCESS) {
+                System.err.println("Failed to set power limit via NVML. Error code: " + result);
+            } else {
+                powerLimit = value;
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to set power limit via NVML: " + e.getMessage());
+        }
+    }
+
+    public void setFanSpeed(int value) {
+        // Включаем ручное управление вентиляторами
+        String enableFanControlCommand = "nvidia-settings --assign [gpu:0]/GPUFanControlState=1";
+        String enableFanControlResult = executeCommand(enableFanControlCommand);
+
+        if (enableFanControlResult.contains("assigned value")) {
+            System.out.println("Fan control enabled successfully.");
+        } else {
+            System.err.println("Failed to enable fan control via nvidia-settings. Output:");
+            System.err.println(enableFanControlResult);
+            return;
+        }
+
+        // Устанавливаем скорость для всех вентиляторов
+        for (int fan = 0; fan < getNumberOfFans(); fan++) {
+            String command = "nvidia-settings -a '[fan:" + fan + "]/GPUTargetFanSpeed=" + value + "'";
+            String result = executeCommand(command);
+
+            if (result.contains("assigned value")) {
+                System.out.println("Fan " + fan + " speed set to " + value + "%.");
+            } else {
+                System.err.println("Failed to set fan speed for fan " + fan + " via nvidia-settings. Output:");
+                System.err.println(command);
+                System.err.println(result.isEmpty() ? "<no output>" : result);
+            }
+        }
+    }
+
+    public int getNumberOfFans() {
+        String command = "nvidia-settings -q fans";
+        String result = executeCommand(command);
+
+        if (result.isEmpty()) {
+            System.err.println("Failed to query fans via nvidia-settings");
+            return 0;
+        }
+
+        // Поиск количества вентиляторов в выводе
+        int fanCount = 0;
+        for (String line : result.split("\n")) {
+            if (line.contains("[fan:")) {
+                fanCount++;
+            }
+        }
+
+        return fanCount;
+    }
+
     public void updateSetting(String setting, int value) {
         switch (setting) {
             case "Core Clock" -> coreClock = value;
@@ -215,7 +303,7 @@ public class GPUSettings {
 }
 
 interface NVML extends Library {
-    NVML INSTANCE = Native.load("libnvidia-ml", NVML.class);
+    NVML INSTANCE = Native.load("libnvidia-ml.so.1", NVML.class);
 
     int NVML_SUCCESS = 0;
     int NVML_TEMPERATURE_GPU = 0;
@@ -239,4 +327,8 @@ interface NVML extends Library {
     int nvmlDeviceGetPowerManagementLimit(Pointer device, IntByReference power);
 
     int nvmlDeviceGetFanSpeed(Pointer device, IntByReference fanSpeed);
+
+    int nvmlDeviceSetApplicationsClocks(Pointer device, int clockType, int frequency);
+
+    int nvmlDeviceSetPowerManagementLimit(Pointer device, int limit);
 }
