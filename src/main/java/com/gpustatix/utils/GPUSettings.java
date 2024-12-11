@@ -13,7 +13,7 @@ public class GPUSettings {
     private int coreClock = 0;
     private int memoryClock = 0;
     private int powerLimit = 0;
-    private int tempLimit = 0;
+    private int tempLimit = 100;
     private int fanSpeed = 0;
 
     private int gpuTemperature = 0;
@@ -46,21 +46,35 @@ public class GPUSettings {
 
     private String executeCommand(String command) {
         try {
-            ProcessBuilder builder = new ProcessBuilder(command.split(" "));
+            ProcessBuilder builder = new ProcessBuilder("bash", "-c", command);
             Process process = builder.start();
+
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+
             StringBuilder output = new StringBuilder();
+            StringBuilder errorOutput = new StringBuilder();
             String line;
+
             while ((line = reader.readLine()) != null) {
                 output.append(line).append("\n");
             }
-            int exitCode = process.waitFor();
-            if (exitCode != 0) {
-                return ""; // Возвращаем пустую строку, если команда завершилась с ошибкой
+
+            while ((line = errorReader.readLine()) != null) {
+                errorOutput.append(line).append("\n");
             }
+
+            int exitCode = process.waitFor();
+
+            if (exitCode != 0) {
+                System.err.println("Command failed with exit code " + exitCode);
+                System.err.println("Error output: " + errorOutput.toString());
+                return errorOutput.toString().trim(); // Возвращаем вывод ошибки
+            }
+
             return output.toString().trim();
+
         } catch (IOException | InterruptedException e) {
-            // Логирование ошибки
             System.err.println("Error executing command: " + command);
             e.printStackTrace();
             return ""; // Возвращаем пустую строку в случае ошибки
@@ -110,17 +124,6 @@ public class GPUSettings {
     }
 
     public int getTempLimit() {
-        if (tempLimit == 0 && isCommandAvailable("nvidia-settings")) {
-            String result = executeCommand("nvidia-settings -q [gpu:0]/GPUGraphicsTemp");
-            try {
-                String[] parts = result.split(":");
-                if (parts.length > 1) {
-                    tempLimit = Integer.parseInt(parts[1].trim().replace(" C", ""));
-                }
-            } catch (NumberFormatException e) {
-                System.err.println("Error parsing temperature limit");
-            }
-        }
         return tempLimit;
     }
 
@@ -200,29 +203,31 @@ public class GPUSettings {
         }
     }
 
-    public void setCoreClockNVML(int value) {
-        try {
-            int result = NVML.INSTANCE.nvmlDeviceSetApplicationsClocks(device, NVML.NVML_CLOCK_GRAPHICS, value);
-            if (result != NVML.NVML_SUCCESS) {
-                System.err.println("Failed to set core clock via NVML. Error code: " + result);
-            } else {
-                coreClock = value;
-            }
-        } catch (Exception e) {
-            System.err.println("Failed to set core clock via NVML: " + e.getMessage());
+    public void setCoreClock(int value) {
+        String command = "sudo nvidia-settings -a '[gpu:0]/GPUGraphicsClockOffset[3]=" + value + "'";
+        String result = executeCommand(command);
+
+        if (result.contains("Attribute 'GPUGraphicsClockOffset'")) {
+            System.out.println("Core clock set to " + value + " MHz.");
+            coreClock = value;
+        } else {
+            System.err.println("Failed to set core clock via nvidia-settings. Output:");
+            System.err.println(command);
+            System.err.println(result.isEmpty() ? "<no output>" : result);
         }
     }
 
-    public void setMemoryClockNVML(int value) {
-        try {
-            int result = NVML.INSTANCE.nvmlDeviceSetApplicationsClocks(device, NVML.NVML_CLOCK_MEM, value);
-            if (result != NVML.NVML_SUCCESS) {
-                System.err.println("Failed to set memory clock via NVML. Error code: " + result);
-            } else {
-                memoryClock = value;
-            }
-        } catch (Exception e) {
-            System.err.println("Failed to set memory clock via NVML: " + e.getMessage());
+    public void setMemoryClock(int value) {
+        String command = "sudo nvidia-settings -a '[gpu:0]/GPUMemoryTransferRateOffset[3]=" + value + "'";
+        String result = executeCommand(command);
+
+        if (result.contains("Attribute 'GPUMemoryTransferRateOffset'")) {
+            System.out.println("Memory clock set to " + value + " MHz.");
+            memoryClock = value;
+        } else {
+            System.err.println("Failed to set memory clock via nvidia-settings. Output:");
+            System.err.println(command);
+            System.err.println(result.isEmpty() ? "<no output>" : result);
         }
     }
 
@@ -252,6 +257,10 @@ public class GPUSettings {
             return;
         }
 
+        System.out.println("Number of fans detected: " + getNumberOfFans());
+
+        System.out.println("DISPLAY: " + System.getenv("DISPLAY"));
+
         // Устанавливаем скорость для всех вентиляторов
         for (int fan = 0; fan < getNumberOfFans(); fan++) {
             String command = "nvidia-settings -a '[fan:" + fan + "]/GPUTargetFanSpeed=" + value + "'";
@@ -266,6 +275,7 @@ public class GPUSettings {
             }
         }
     }
+
 
     public int getNumberOfFans() {
         String command = "nvidia-settings -q fans";
@@ -287,6 +297,43 @@ public class GPUSettings {
         return fanCount;
     }
 
+    public void setTempLimit(int newTempLimit) {
+        tempLimit = newTempLimit;
+        System.out.println("Setting temperature limit to " + tempLimit + "°C.");
+
+        // Проверяем текущую температуру GPU
+        int currentTemp = getGpuTemperature();
+        if (currentTemp >= tempLimit) {
+            System.out.println("Temperature has reached " + currentTemp + "°C. Taking corrective actions.");
+
+            // Увеличиваем скорость вентиляторов
+            int newFanSpeed = fanSpeed + 20; // Увеличиваем скорость вентиляторов на 20% (можно настроить)
+            if (newFanSpeed > 100) {
+                newFanSpeed = 100; // Ограничиваем на 100% (максимальная скорость)
+            }
+            setFanSpeed(newFanSpeed);
+
+            // Уменьшаем частоты (core и memory clocks)
+            int newCoreClock = coreClock - 50; // Уменьшаем частоту ядра на 50 МГц (можно настроить)
+            int newMemoryClock = memoryClock - 50; // Уменьшаем частоту памяти на 50 МГц (можно настроить)
+
+            if (newCoreClock < 0) {
+                newCoreClock = 0; // Минимальная частота ядра
+            }
+            if (newMemoryClock < 0) {
+                newMemoryClock = 0; // Минимальная частота памяти
+            }
+
+            setCoreClock(newCoreClock);
+            setMemoryClock(newMemoryClock);
+
+            System.out.println("Core clock reduced to " + newCoreClock + " MHz.");
+            System.out.println("Memory clock reduced to " + newMemoryClock + " MHz.");
+        } else {
+            System.out.println("Temperature is within safe limits (" + currentTemp + "°C). No action required.");
+        }
+    }
+
     public void updateSetting(String setting, int value) {
         switch (setting) {
             case "Core Clock" -> coreClock = value;
@@ -303,7 +350,7 @@ public class GPUSettings {
 }
 
 interface NVML extends Library {
-    NVML INSTANCE = Native.load("libnvidia-ml.so.1", NVML.class);
+    NVML INSTANCE = Native.load("libnvidia-ml.so.560.35.03", NVML.class);
 
     int NVML_SUCCESS = 0;
     int NVML_TEMPERATURE_GPU = 0;

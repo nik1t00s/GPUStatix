@@ -103,11 +103,11 @@ public class DashboardUI extends JFrame {
 
     private void updateGpuSetting(String label, int value) {
         switch (label) {
-            case "Core Clock" -> gpuSettings.setCoreClockNVML(value);
-            case "Memory Clock" -> gpuSettings.setMemoryClockNVML(value);
+            case "Core Clock" -> gpuSettings.setCoreClock(value);
+            case "Memory Clock" -> gpuSettings.setMemoryClock(value);
             case "Power Limit" -> gpuSettings.setPowerLimitNVML(value);
             case "Fan Speed" -> gpuSettings.setFanSpeed(value);
-            case "Temp Limit" -> gpuSettings.updateSetting(label, value); // Обновление в GPUSettings для Temp Limit
+            case "Temp Limit" -> gpuSettings.setTempLimit(value);
             default -> System.err.println("Unsupported setting: " + label);
         }
     }
