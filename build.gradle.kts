@@ -1,4 +1,9 @@
+group = "com.gpustatix"
+version = "1.0.0"
+
 plugins {
+    id("org.springframework.boot") version "3.2.0"
+    id("io.spring.dependency-management") version "1.1.4"
     id("java")
     id("application")
     id("com.github.johnrengelman.shadow") version "8.1.1"
@@ -26,6 +31,16 @@ dependencies {
         exclude(group = "org.slf4j", module = "slf4j-api")
     }
     implementation("com.badlogicgames.gdx:gdx:1.10.0")
+    // Spring Boot
+    implementation("org.springframework.boot:spring-boot-starter")
+    implementation("org.springframework.boot:spring-boot-starter-batch")
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
+    // База данных
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    runtimeOnly("org.postgresql:postgresql") // или runtimeOnly("com.h2database:h2")
+    // Тестирование
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.batch:spring-batch-test")
 }
 
 application {
@@ -51,6 +66,7 @@ tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     kotlinOptions {
+        freeCompilerArgs = listOf("-Xjsr305=strict")
         jvmTarget = "17"
     }
 }
@@ -58,3 +74,12 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 tasks.withType<JavaCompile> {
     options.compilerArgs.add("-Xlint:deprecation")
 }
+
+configure<JavaPluginExtension> {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
+}у
