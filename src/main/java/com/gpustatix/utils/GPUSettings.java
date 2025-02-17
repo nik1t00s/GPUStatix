@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 
 public class GPUSettings {
-    private static GPUSettings instance;
     private String gpuVendor = "Unknown";
     private int coreClock = 0;
     private int memoryClock = 0;
@@ -37,13 +36,6 @@ public class GPUSettings {
         }
     }
 
-    public static GPUSettings getInstance() {
-        if (instance == null) {
-            instance = new GPUSettings();
-        }
-        return instance;
-    }
-
     private String executeCommand(String command) {
         try {
             ProcessBuilder builder = new ProcessBuilder("bash", "-c", command);
@@ -68,7 +60,7 @@ public class GPUSettings {
 
             if (exitCode != 0) {
                 System.err.println("Command failed with exit code " + exitCode);
-                System.err.println("Error output: " + errorOutput.toString());
+                System.err.println("Error output: " + errorOutput);
                 return errorOutput.toString().trim(); // Возвращаем вывод ошибки
             }
 
@@ -334,22 +326,13 @@ public class GPUSettings {
         }
     }
 
-    public void updateSetting(String setting, int value) {
-        switch (setting) {
-            case "Core Clock" -> coreClock = value;
-            case "Memory Clock" -> memoryClock = value;
-            case "Power Limit" -> powerLimit = value;
-            case "Temp Limit" -> tempLimit = value;
-            case "Fan Speed" -> fanSpeed = value;
-            case "GPU Temperature" -> gpuTemperature = value;
-            case "GPU Memory Usage" -> gpuMemoryUsage = value;
-            case "GPU Utilization" -> gpuUtilization = value + "%";
-            default -> System.err.println("Unknown setting: " + setting);
-        }
-    }
+
 }
 
 interface NVML extends Library {
+
+
+
     NVML INSTANCE = Native.load("libnvidia-ml.so.560.35.03", NVML.class);
 
     int NVML_SUCCESS = 0;

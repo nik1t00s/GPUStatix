@@ -4,14 +4,17 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Objects;
 
 public class SysInfo {
-
-    static String line;
 
     public static boolean checkIntegrated() {
         GPUSettings gpu = new GPUSettings();
         String gpuName = gpu.getGpuName().trim();
+
+        if (Objects.equals(gpu.getGpuVendor(), "NVIDIA")){
+            return false;
+        }
 
         if (gpuName.isEmpty()) {
             System.out.println("GPU name is empty. Assuming integrated graphics.");
