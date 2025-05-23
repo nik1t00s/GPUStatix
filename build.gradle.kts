@@ -82,4 +82,4 @@ configure<JavaPluginExtension> {
 
 tasks.withType<Test> {
     useJUnitPlatform()
-}у
+}

@@ -333,7 +333,7 @@ interface NVML extends Library {
 
 
 
-    NVML INSTANCE = Native.load("libnvidia-ml.so.560.35.03", NVML.class);
+    NVML INSTANCE = Native.load("libnvidia-ml.so", NVML.class);
 
     int NVML_SUCCESS = 0;
     int NVML_TEMPERATURE_GPU = 0;
