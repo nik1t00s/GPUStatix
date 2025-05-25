@@ -29,17 +29,17 @@
 ```bash
 git clone https://github.com/nik1t00s/GPUStatix.git
 cd GPUStatix
-```bash
+bash```
 
 3. Соберите проект:
 ```bash
 ./gradlew build
-```bash
+bash```
 
 4. Запустите приложение:
 ```bash
 ./gradlew run
-```bash
+bash```
 
 ## 🐧 Зависимости
 
