@@ -2,6 +2,9 @@ package com.gpustatix.utils;
 
 import com.sun.jna.*;
 import com.sun.jna.ptr.*;
+import com.sun.jna.Structure;
+import java.util.Arrays;
+import java.util.List;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -155,7 +158,21 @@ public class GPUSettings {
     }
 
     public int getGpuTemperature() {
-        if (gpuTemperature == 0 && isCommandAvailable("nvidia-smi")) {
+        try {
+            if (device != null) {
+                IntByReference tempRef = new IntByReference();
+                int result = NVML.INSTANCE.nvmlDeviceGetTemperature(device, NVML.NVML_TEMPERATURE_GPU, tempRef);
+                if (result == NVML.NVML_SUCCESS) {
+                    gpuTemperature = tempRef.getValue();
+                    return gpuTemperature;
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to get GPU temperature via NVML: " + e.getMessage());
+        }
+        
+        // Fallback to command line if NVML failed
+        if (isCommandAvailable("nvidia-smi")) {
             String result = executeCommand("nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits");
             gpuTemperature = result.isEmpty() ? 0 : Integer.parseInt(result.trim());
         }
@@ -163,15 +180,68 @@ public class GPUSettings {
     }
 
     public int getGpuMemoryUsage() {
-        if (gpuMemoryUsage == 0 && isCommandAvailable("nvidia-smi")) {
-            String result = executeCommand("nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits");
-            gpuMemoryUsage = result.isEmpty() ? 0 : Integer.parseInt(result.trim());
+        try {
+            if (device != null) {
+                NVML.nvmlMemory memInfo = new NVML.nvmlMemory();
+                int result = NVML.INSTANCE.nvmlDeviceGetMemoryInfo(device, memInfo);
+                if (result == NVML.NVML_SUCCESS) {
+                    // Calculate memory usage as percentage
+                    if (memInfo.total > 0) {
+                        gpuMemoryUsage = (int)((memInfo.used * 100) / memInfo.total);
+                    } else {
+                        // Convert from bytes to MB as fallback if percentage calculation fails
+                        gpuMemoryUsage = (int)(memInfo.used / (1024 * 1024));
+                    }
+                    return gpuMemoryUsage;
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to get GPU memory usage via NVML: " + e.getMessage());
+        }
+        
+        // Fallback to command line if NVML failed
+        if (isCommandAvailable("nvidia-smi")) {
+            try {
+                // Try to get memory usage as percentage
+                String usedResult = executeCommand("nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits");
+                String totalResult = executeCommand("nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits");
+                
+                if (!usedResult.isEmpty() && !totalResult.isEmpty()) {
+                    int used = Integer.parseInt(usedResult.trim());
+                    int total = Integer.parseInt(totalResult.trim());
+                    if (total > 0) {
+                        gpuMemoryUsage = (used * 100) / total;
+                        return gpuMemoryUsage;
+                    }
+                }
+                
+                // Fallback to just the used memory value
+                if (!usedResult.isEmpty()) {
+                    gpuMemoryUsage = Integer.parseInt(usedResult.trim());
+                }
+            } catch (NumberFormatException e) {
+                System.err.println("Failed to parse GPU memory usage from nvidia-smi: " + e.getMessage());
+            }
         }
         return gpuMemoryUsage;
     }
 
     public String getGpuUtilization() {
-        if (gpuUtilization.equals("Unknown") && isCommandAvailable("nvidia-smi")) {
+        try {
+            if (device != null) {
+                NVML.nvmlUtilization utilization = new NVML.nvmlUtilization();
+                int result = NVML.INSTANCE.nvmlDeviceGetUtilizationRates(device, utilization);
+                if (result == NVML.NVML_SUCCESS) {
+                    gpuUtilization = String.valueOf(utilization.gpu);
+                    return gpuUtilization;
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to get GPU utilization via NVML: " + e.getMessage());
+        }
+        
+        // Fallback to command line if NVML failed
+        if (isCommandAvailable("nvidia-smi")) {
             String result = executeCommand("nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits");
             gpuUtilization = result.isEmpty() ? "Unknown" : result.trim();
         }
@@ -517,7 +587,28 @@ public class GPUSettings {
 
 interface NVML extends Library {
 
-
+    // Memory info structure for NVML
+    class nvmlMemory extends Structure {
+        public long used;
+        public long free;
+        public long total;
+        
+        @Override
+        protected List<String> getFieldOrder() {
+            return Arrays.asList("used", "free", "total");
+        }
+    }
+    
+    // Utilization rates structure for NVML
+    class nvmlUtilization extends Structure {
+        public int gpu;    // GPU utilization percentage
+        public int memory; // Memory utilization percentage
+        
+        @Override
+        protected List<String> getFieldOrder() {
+            return Arrays.asList("gpu", "memory");
+        }
+    }
 
     NVML INSTANCE = Native.load("libnvidia-ml.so", NVML.class);
 
@@ -547,4 +638,9 @@ interface NVML extends Library {
     int nvmlDeviceSetApplicationsClocks(Pointer device, int clockType, int frequency);
 
     int nvmlDeviceSetPowerManagementLimit(Pointer device, int limit);
+    
+    // Added methods for memory and utilization
+    int nvmlDeviceGetMemoryInfo(Pointer device, nvmlMemory memory);
+    
+    int nvmlDeviceGetUtilizationRates(Pointer device, nvmlUtilization utilization);
 }
