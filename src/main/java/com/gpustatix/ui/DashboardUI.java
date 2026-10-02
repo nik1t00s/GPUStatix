@@ -16,8 +16,8 @@ public class DashboardUI extends JFrame {
     private MonitoringOverlay overlay;
     private final ExecutorService executor;
     private final ExecutorService uiUpdateExecutor;
-    private boolean isRunning = true;
-    private int pollingIntervalMs = 1000; // Default 1 second
+    private volatile boolean isRunning = true;
+    private volatile int pollingIntervalMs = 1000; // Default 1 second
     private final JTabbedPane tabbedPane;
 
     public DashboardUI(GPUSettings gpuSettings) {
@@ -25,7 +25,9 @@ public class DashboardUI extends JFrame {
 
         setTitle("GPUStatix");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE); // Changed to DISPOSE_ON_CLOSE to handle cleanup
-        setSize(500, 400);
+        setSize(760, 620);
+        setMinimumSize(new Dimension(650, 520));
+        getRootPane().setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         setResizable(true);
         setLayout(new BorderLayout());
         
@@ -42,8 +44,9 @@ public class DashboardUI extends JFrame {
 
         // Верхняя панель с названием видеокарты
         JLabel gpuLabel = new JLabel("GPU: " + gpuSettings.getGpuName(), SwingConstants.CENTER);
-        gpuLabel.setFont(new Font("Arial", Font.BOLD, 16));
-        gpuLabel.setForeground(Color.WHITE);
+        gpuLabel.setFont(new Font("SansSerif", Font.BOLD, 22));
+        gpuLabel.setForeground(StudioTheme.TEXT);
+        gpuLabel.setBorder(BorderFactory.createEmptyBorder(4, 0, 20, 0));
         add(gpuLabel, BorderLayout.NORTH);
         
         // Create tabbed pane for different sections
@@ -52,12 +55,12 @@ public class DashboardUI extends JFrame {
         // Settings panel
         JPanel settingsPanel = new JPanel();
         settingsPanel.setLayout(new BorderLayout());
-        settingsPanel.setBackground(Color.BLACK);
+        settingsPanel.setBackground(StudioTheme.BACKGROUND);
         
         // Controls panel for GPU settings
         JPanel controlsPanel = new JPanel();
-        controlsPanel.setLayout(new GridLayout(5, 1));
-        controlsPanel.setBackground(Color.BLACK);
+        controlsPanel.setLayout(new GridLayout(5, 1, 12, 12));
+        controlsPanel.setBackground(StudioTheme.BACKGROUND);
 
         // Добавляем поля для ввода значений и отображения текущих значений
         controlsPanel.add(createValueField("Core Clock", gpuSettings.getCoreClock(), 500, 2000));
@@ -68,7 +71,7 @@ public class DashboardUI extends JFrame {
         
         // Add polling interval control
         JPanel pollingPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        pollingPanel.setBackground(Color.BLACK);
+        pollingPanel.setBackground(StudioTheme.BACKGROUND);
         JLabel pollingLabel = new JLabel("Polling Interval (ms): ");
         pollingLabel.setForeground(Color.WHITE);
         JTextField pollingField = new JTextField(String.valueOf(pollingIntervalMs), 5);
@@ -162,15 +165,15 @@ public class DashboardUI extends JFrame {
 
         // Нижняя панель с кнопкой для отображения оверлея
         JPanel buttonPanel = new JPanel();
-        buttonPanel.setBackground(Color.BLACK);
+        buttonPanel.setBackground(StudioTheme.BACKGROUND);
 
         JButton toggleOverlayButton = new JButton("Toggle Overlay");
         toggleOverlayButton.addActionListener(e -> toggleOverlay());
         buttonPanel.add(toggleOverlayButton);
         add(buttonPanel, BorderLayout.SOUTH);
 
-        setBackground(Color.BLACK);
-        getContentPane().setBackground(Color.BLACK);
+        setBackground(StudioTheme.BACKGROUND);
+        getContentPane().setBackground(StudioTheme.BACKGROUND);
     }
 
     /**
@@ -189,7 +192,7 @@ public class DashboardUI extends JFrame {
 
         // Поле с текущим значением
         JLabel currentValueLabel = new JLabel(String.valueOf(initialValue));
-        currentValueLabel.setForeground(Color.GREEN);
+        currentValueLabel.setForeground(StudioTheme.ACCENT);
 
         // Поле ввода для изменения значения
         JTextField inputField = new JTextField(4);
@@ -209,7 +212,7 @@ public class DashboardUI extends JFrame {
             }
         });
 
-        panel.setBackground(Color.BLACK);
+        panel.setBackground(StudioTheme.BACKGROUND);
         panel.add(nameLabel, BorderLayout.WEST);
         panel.add(currentValueLabel, BorderLayout.CENTER);
         panel.add(inputField, BorderLayout.EAST);
@@ -232,10 +235,8 @@ public class DashboardUI extends JFrame {
 
     private void toggleOverlay() {
         if (overlay == null || !overlay.isVisible()) {
-            executor.submit(() -> {
-                overlay = new MonitoringOverlay();
-                overlay.setVisible(true);
-            });
+            overlay = new MonitoringOverlay();
+            overlay.setVisible(true);
         } else {
             overlay.dispose();
             overlay = null;

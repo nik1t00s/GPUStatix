@@ -28,3 +28,15 @@ replay_pid*
 
 # Ignore Gradle build output directory
 build
+
+.DS_Store
+.idea/
+bin/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Generated caches
+__pycache__/
+*.py[cod]
+*.pyc.*
+.pytest_cache/
+.ruff_cache/
